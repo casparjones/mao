@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>neko — paru, but friendlier</title>
+<meta name="description" content="A friendly wrapper around paru for Arch Linux. Drop-in compatible, with sprechende sub-commands instead of cryptic flags.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐱</text></svg>">
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg-alt: #161b22;
+    --fg: #e6edf3;
+    --fg-dim: #8b949e;
+    --accent: #f78166;
+    --accent-2: #a5d6ff;
+    --border: #30363d;
+    --code-bg: #1c2128;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-alt: #f6f8fa;
+    --fg: #1f2328;
+    --fg-dim: #59636e;
+    --accent: #cf222e;
+    --accent-2: #0969da;
+    --border: #d0d7de;
+    --code-bg: #f6f8fa;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    line-height: 1.6;
+    color: var(--fg);
+    background: var(--bg);
+  }
+  code, pre, kbd {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  a { color: var(--accent-2); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
+
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 1rem; flex-wrap: wrap;
+  }
+  .brand { font-weight: 600; font-size: 1.1rem; }
+  .brand .cat { margin-right: 0.35rem; }
+  nav { display: inline-flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  nav a {
+    color: var(--fg-dim);
+    font-size: 0.9rem;
+  }
+  nav a:hover { color: var(--fg); text-decoration: none; }
+  .theme-toggle {
+    background: none; border: 1px solid var(--border);
+    color: var(--fg-dim); padding: 0.3rem 0.6rem; border-radius: 6px;
+    cursor: pointer; font: inherit; font-size: 0.85rem;
+  }
+  .theme-toggle:hover { color: var(--fg); border-color: var(--fg-dim); }
+
+  .hero {
+    text-align: center;
+    padding: 3rem 0 2rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+  }
+  .hero h1 {
+    font-size: clamp(2.2rem, 7vw, 3.2rem);
+    margin: 0 0 0.5rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .hero .tagline {
+    color: var(--fg-dim); font-size: 1.15rem; margin: 0 0 2rem;
+  }
+
+  .install-box {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex; align-items: stretch;
+    max-width: 680px; margin: 0 auto;
+    overflow: hidden;
+    text-align: left;
+  }
+  .install-box code {
+    flex: 1; padding: 0.9rem 1rem;
+    overflow-x: auto; white-space: nowrap;
+    font-size: 0.92rem;
+  }
+  .copy-btn {
+    background: transparent; border: none; border-left: 1px solid var(--border);
+    color: var(--fg-dim); padding: 0 1rem;
+    cursor: pointer; font: inherit; font-size: 0.85rem;
+    white-space: nowrap;
+  }
+  .copy-btn:hover { color: var(--accent); background: var(--bg-alt); }
+  .copy-btn.copied { color: var(--accent-2); }
+
+  h2 {
+    font-size: 1.35rem; margin-top: 2.5rem; padding-bottom: 0.35rem;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 1.05rem; margin-top: 1.5rem; }
+  p { margin: 0.8rem 0; }
+  p code, li code, td code {
+    background: var(--code-bg);
+    padding: 0.12rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.88em;
+  }
+
+  .table-wrap { overflow-x: auto; }
+  table {
+    width: 100%; border-collapse: collapse; margin: 1rem 0;
+    font-size: 0.9rem;
+  }
+  th, td {
+    text-align: left; padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    color: var(--fg-dim); font-weight: 600;
+    font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    padding: 0.9rem 1rem; border-radius: 6px; overflow-x: auto;
+    font-size: 0.88rem;
+  }
+  pre code { background: none; padding: 0; }
+
+  footer {
+    margin-top: 4rem; padding: 1.5rem 0;
+    border-top: 1px solid var(--border);
+    color: var(--fg-dim); font-size: 0.85rem;
+    text-align: center;
+  }
+
+  @media (max-width: 600px) {
+    .container { padding: 1rem 0.9rem 2rem; }
+    .hero { padding: 2rem 0 1.5rem; }
+    .install-box code { font-size: 0.78rem; }
+    table { font-size: 0.82rem; }
+    th, td { padding: 0.4rem 0.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="brand"><span class="cat">🐱</span>neko</div>
+    <nav>
+      <a href="#commands">commands</a>
+      <a href="#install">install</a>
+      <a href="https://github.com/casparjones/neko">github</a>
+      <button class="theme-toggle" id="themeToggle" aria-label="toggle theme">🌙 dark</button>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <h1>🐱 neko</h1>
+    <p class="tagline"><code>paru</code>, but friendlier.</p>
+
+    <div class="install-box" id="installBox">
+      <code id="installCmd">curl -sSL https://casparjones.github.io/neko/install.sh | sh</code>
+      <button class="copy-btn" id="copyBtn" aria-label="copy install command">copy</button>
+    </div>
+  </section>
+
+  <h2>Why?</h2>
+  <p>
+    <code>paru</code> is great, but its <code>pacman</code>-style flags are hard to
+    discover and easy to forget. <strong>neko</strong> wraps paru with readable
+    sub-commands — <code>neko install firefox</code>, <code>neko update</code>,
+    <code>neko search wine</code> — while still passing any paru flag through
+    unchanged. Your muscle memory keeps working.
+  </p>
+
+  <h2 id="commands">Commands</h2>
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>neko</th><th>paru</th><th>description</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>neko update</code></td><td><code>paru -Syu</code></td><td>update system + AUR</td></tr>
+      <tr><td><code>neko update-db</code></td><td><code>paru -Syy</code></td><td>refresh package database</td></tr>
+      <tr><td><code>neko install &lt;pkg&gt;</code></td><td><code>paru -S &lt;pkg&gt;</code></td><td>install package(s)</td></tr>
+      <tr><td><code>neko remove &lt;pkg&gt;</code></td><td><code>paru -Rns &lt;pkg&gt;</code></td><td>remove pkg + deps + configs</td></tr>
+      <tr><td><code>neko search &lt;q&gt;</code></td><td><code>paru -Ss &lt;q&gt;</code></td><td>search repos and AUR</td></tr>
+      <tr><td><code>neko info &lt;pkg&gt;</code></td><td><code>paru -Si &lt;pkg&gt;</code></td><td>package details</td></tr>
+      <tr><td><code>neko list</code></td><td><code>paru -Qe</code></td><td>explicitly installed packages</td></tr>
+      <tr><td><code>neko list-all</code></td><td><code>paru -Q</code></td><td>all installed packages</td></tr>
+      <tr><td><code>neko owns &lt;file&gt;</code></td><td><code>paru -Qo &lt;file&gt;</code></td><td>which package owns a file</td></tr>
+      <tr><td><code>neko files &lt;pkg&gt;</code></td><td><code>paru -Ql &lt;pkg&gt;</code></td><td>files belonging to a package</td></tr>
+      <tr><td><code>neko orphans</code></td><td><code>paru -Qtdq</code></td><td>list orphaned packages</td></tr>
+      <tr><td><code>neko clean</code></td><td><code>paru -Sc</code></td><td>clean package cache</td></tr>
+      <tr><td><code>neko clean-all</code></td><td><code>paru -Scc</code></td><td>empty package cache</td></tr>
+      <tr><td><code>neko autoremove</code></td><td><code>paru -Rns $(paru -Qtdq)</code></td><td>remove orphans (shows preview)</td></tr>
+      <tr><td><code>neko outdated</code></td><td><code>paru -Qu</code></td><td>show available updates</td></tr>
+      <tr><td><code>neko -Syu</code></td><td><code>paru -Syu</code></td><td>any paru flag is passed through 1:1</td></tr>
+      <tr><td><code>neko -- -v</code></td><td><code>paru -v</code></td><td><code>--</code> forces passthrough (for paru's own <code>-v</code>)</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2 id="install">Install</h2>
+  <p>One-liner:</p>
+  <pre><code>curl -sSL https://casparjones.github.io/neko/install.sh | sh</code></pre>
+  <p>The installer will:</p>
+  <ul>
+    <li>check you're on an Arch-based system</li>
+    <li>offer to install <code>paru</code> if it's missing</li>
+    <li>place <code>neko</code> in <code>~/.local/bin</code> (or <code>/usr/local/bin</code> as root)</li>
+    <li>optionally install shell completions (fish / bash / zsh)</li>
+  </ul>
+  <p>Prefer reading the script first? <a href="install.sh">view install.sh</a>.</p>
+
+  <h3>Manual install</h3>
+  <pre><code>curl -fsSLo ~/.local/bin/neko https://raw.githubusercontent.com/casparjones/neko/main/neko
+chmod +x ~/.local/bin/neko</code></pre>
+
+  <h2>Why "neko"?</h2>
+  <p>
+    <em>Neko</em> (猫) is Japanese for cat — a little wink at
+    <code>paru</code>'s anime-flavored heritage. Also: cats are short,
+    friendly, and get the job done. 🐱
+  </p>
+
+  <footer>
+    MIT &middot; <a href="https://github.com/casparjones/neko">source on github</a> &middot; no tracking, no external fonts
+  </footer>
+
+</div>
+
+<script>
+(function() {
+  var root = document.documentElement;
+  var toggle = document.getElementById('themeToggle');
+  var stored = localStorage.getItem('neko-theme');
+  if (stored) root.setAttribute('data-theme', stored);
+
+  function render() {
+    var dark = root.getAttribute('data-theme') !== 'light';
+    toggle.textContent = dark ? '🌙 dark' : '☀️ light';
+  }
+  render();
+
+  toggle.addEventListener('click', function() {
+    var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('neko-theme', next);
+    render();
+  });
+
+  var copyBtn = document.getElementById('copyBtn');
+  var cmd = document.getElementById('installCmd');
+  copyBtn.addEventListener('click', function() {
+    var text = cmd.textContent;
+    var done = function() {
+      copyBtn.textContent = 'copied';
+      copyBtn.classList.add('copied');
+      setTimeout(function() {
+        copyBtn.textContent = 'copy';
+        copyBtn.classList.remove('copied');
+      }, 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, done);
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'absolute';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+      done();
+    }
+  });
+})();
+</script>
+</body>
+</html>

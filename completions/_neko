@@ -1,0 +1,56 @@
+#compdef neko
+# neko completions for zsh
+# https://github.com/casparjones/neko
+#
+# Place somewhere in $fpath, e.g.:
+#   ~/.local/share/zsh/site-functions/_neko
+#   /usr/share/zsh/site-functions/_neko
+
+_neko() {
+    local -a subcommands
+    subcommands=(
+        'update:Update system + AUR'
+        'update-db:Refresh package database'
+        'install:Install package(s)'
+        'remove:Remove pkg + deps + configs'
+        'search:Search repos and AUR'
+        'info:Show package details'
+        'list:Explicitly installed packages'
+        'list-all:All installed packages'
+        'owns:Which package owns a file'
+        'files:Files belonging to a package'
+        'orphans:List orphaned packages'
+        'clean:Clean package cache'
+        'clean-all:Empty package cache'
+        'autoremove:Remove orphaned packages'
+        'outdated:Show available updates'
+        'help:Show help'
+        'version:Show neko & paru version'
+    )
+
+    if (( CURRENT == 2 )); then
+        _describe 'subcommand' subcommands
+        return
+    fi
+
+    case "$words[2]" in
+        install|info)
+            local -a pkgs
+            pkgs=( ${(f)"$(pacman -Slq 2>/dev/null)"} )
+            _describe 'package' pkgs
+            ;;
+        remove|files)
+            local -a pkgs
+            pkgs=( ${(f)"$(pacman -Qq 2>/dev/null)"} )
+            _describe 'package' pkgs
+            ;;
+        owns)
+            _files
+            ;;
+        autoremove)
+            _arguments '--no-info[skip the orphan preview]'
+            ;;
+    esac
+}
+
+_neko "$@"

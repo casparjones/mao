@@ -1,0 +1,37 @@
+name: Sync install.sh → docs/
+
+# Keep docs/install.sh (served by GitHub Pages) in lockstep with the
+# repo-root install.sh. Triggered only on changes to the root file, so
+# the auto-commit does not re-trigger the workflow.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'install.sh'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy install.sh into docs/
+        run: |
+          mkdir -p docs
+          cp install.sh docs/install.sh
+
+      - name: Commit if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- docs/install.sh; then
+            echo "docs/install.sh already up to date"
+            exit 0
+          fi
+          git add docs/install.sh
+          git commit -m "chore: sync install.sh → docs/"
+          git push
