@@ -4,7 +4,7 @@
 
 set -o pipefail
 
-readonly MAO_VERSION="0.1.1"
+readonly MAO_VERSION="0.1.2"
 readonly MAO_REPO="https://github.com/casparjones/mao"
 readonly MAO_HOMEPAGE="https://casparjones.github.io/mao/"
 
@@ -124,6 +124,7 @@ print_version() {
 # Commands that need a bit more than a simple paru invocation
 # ---------------------------------------------------------------------------
 cmd_update() {
+    sudo -v || die "sudo authentication failed"
     if is_garuda; then
         local answer=""
         if [[ -t 0 ]]; then
@@ -200,6 +201,7 @@ main() {
                        exec paru -Syy "$@" ;;
         install)       require_paru
                        [[ $# -gt 0 ]] || die "install: at least one package name required"
+                       sudo -v || die "sudo authentication failed"
                        info "installing: $* → paru -S $*"
                        exec paru -S "$@" ;;
         remove)        require_paru

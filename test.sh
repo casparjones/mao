@@ -92,7 +92,7 @@ echo "Running mao tests…"
 expect_contains "help mentions USAGE"              "USAGE"                 help
 expect_contains "bare mao prints help"             "COMMANDS"
 expect_contains "--version shows maomao"           "maomao"                --version
-expect_contains "--version shows version number"   "0.1.1"                 --version
+expect_contains "--version shows version number"   "0.1.2"                 --version
 expect_contains "--version shows paru version"     "paru v9.9.9"           --version
 expect_contains "help mentions homepage"           "casparjones.github.io" help
 
