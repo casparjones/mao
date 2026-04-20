@@ -1,4 +1,4 @@
-# 🐱 neko
+# mao
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Shell](https://img.shields.io/badge/shell-bash-brightgreen.svg)](https://www.gnu.org/software/bash/)
@@ -6,106 +6,107 @@
 
 **A friendly wrapper around [paru](https://github.com/Morganamilo/paru) for Arch Linux.**
 
-`neko` replaces paru's cryptic pacman-style flags with readable sub-commands —
+`mao` replaces paru's cryptic pacman-style flags with readable sub-commands —
 while still passing any paru flag straight through. Your muscle memory keeps
 working; new users don't need to memorize flags.
 
-🌐 Homepage: <https://casparjones.github.io/neko/>
+🌐 Homepage: <https://casparjones.github.io/mao/>
 
 ## Motivation
 
 paru is great. But `-Syu`, `-Qtdq`, `-Rns`? You either know them or you don't.
-`neko update` is obvious. `neko orphans` is obvious. And when you need
-something specific, `neko -Syu --needed` just works — unknown arguments are
-forwarded to paru verbatim, so nothing is ever lost by using neko.
+`mao update` is obvious. `mao orphans` is obvious. And when you need
+something specific, `mao -Syu --needed` just works — unknown arguments are
+forwarded to paru verbatim, so nothing is ever lost by using mao.
 
 ## Install
 
 ### One-liner
 
 ```sh
-curl -sSL https://casparjones.github.io/neko/install.sh | sh
+curl -sSL https://casparjones.github.io/mao/install.sh | sh
 ```
 
 The installer will:
 
 - check you're on an Arch-based system
 - offer to install `paru` if it's missing
-- place `neko` in `~/.local/bin` (or `/usr/local/bin` as root)
+- place `mao` in `~/.local/bin` (or `/usr/local/bin` as root)
 - optionally install shell completions for fish / bash / zsh
 
 Prefer reading the script first? [view install.sh](./install.sh).
 
-Environment overrides: `NEKO_BRANCH=main`, `NEKO_INSTALL_DIR=…`, `NEKO_YES=1`.
+Environment overrides: `MAO_BRANCH=main`, `MAO_INSTALL_DIR=…`, `MAO_YES=1`.
 
 ### Manual
 
 ```sh
-curl -fsSLo ~/.local/bin/neko https://raw.githubusercontent.com/casparjones/neko/main/neko
-chmod +x ~/.local/bin/neko
+curl -fsSLo ~/.local/bin/mao https://raw.githubusercontent.com/casparjones/mao/main/mao
+chmod +x ~/.local/bin/mao
 ```
 
 ## Commands
 
-| neko | paru | description |
-|------|------|-------------|
-| `neko update` | `paru -Syu` | update system + AUR |
-| `neko update-db` | `paru -Syy` | refresh package database |
-| `neko install <pkg>` | `paru -S <pkg>` | install package(s) |
-| `neko remove <pkg>` | `paru -Rns <pkg>` | remove pkg + deps + configs |
-| `neko search <q>` | `paru -Ss <q>` | search repos and AUR |
-| `neko info <pkg>` | `paru -Si <pkg>` | package details |
-| `neko list` | `paru -Qe` | explicitly installed packages |
-| `neko list-all` | `paru -Q` | all installed packages |
-| `neko owns <file>` | `paru -Qo <file>` | which package owns a file |
-| `neko files <pkg>` | `paru -Ql <pkg>` | files belonging to a package |
-| `neko orphans` | `paru -Qtdq` | list orphaned packages |
-| `neko clean` | `paru -Sc` | clean package cache |
-| `neko clean-all` | `paru -Scc` | empty package cache |
-| `neko autoremove` | `paru -Rns $(paru -Qtdq)` | remove orphans (with preview) |
-| `neko outdated` | `paru -Qu` | show available updates |
-| `neko help` | — | show help |
-| `neko version` | — | show neko & paru version |
+| mao | paru | description |
+|-----|------|-------------|
+| `mao update` | `paru -Syu` | update system + AUR |
+| `mao update-db` | `paru -Syy` | refresh package database |
+| `mao install <pkg>` | `paru -S <pkg>` | install package(s) |
+| `mao remove <pkg>` | `paru -Rns <pkg>` | remove pkg + deps + configs |
+| `mao search <q>` | `paru -Ss <q>` | search repos and AUR |
+| `mao info <pkg>` | `paru -Si <pkg>` | package details |
+| `mao list` | `paru -Qe` | explicitly installed packages |
+| `mao list-all` | `paru -Q` | all installed packages |
+| `mao owns <file>` | `paru -Qo <file>` | which package owns a file |
+| `mao files <pkg>` | `paru -Ql <pkg>` | files belonging to a package |
+| `mao orphans` | `paru -Qtdq` | list orphaned packages |
+| `mao clean` | `paru -Sc` | clean package cache |
+| `mao clean-all` | `paru -Scc` | empty package cache |
+| `mao autoremove` | `paru -Rns $(paru -Qtdq)` | remove orphans (with preview) |
+| `mao outdated` | `paru -Qu` | show available updates |
+| `mao help` | — | show help |
+| `mao version` | — | show mao & paru version |
 
 ### Passthrough
 
-Anything neko doesn't recognize is forwarded to paru 1:1:
+Anything mao doesn't recognize is forwarded to paru 1:1:
 
 ```sh
-neko -Syu                  # → paru -Syu
-neko -Qi firefox           # → paru -Qi firefox
-neko --aur firefox         # → paru --aur firefox
+mao -Syu                  # → paru -Syu
+mao -Qi firefox           # → paru -Qi firefox
+mao --aur firefox         # → paru --aur firefox
 ```
 
-The **only** flag neko intercepts is `-v` / `--version`, which shows both
-neko's and paru's version.
+The **only** flag mao intercepts is `-v` / `--version`, which shows both
+mao's and paru's version.
 
 ## Examples
 
 ```sh
 # Friday afternoon routine
-neko update
+mao update
 
 # Install a couple of apps
-neko install firefox discord
+mao install firefox discord
 
 # Find a PDF viewer
-neko search pdf
+mao search pdf
 
 # Who owns /usr/bin/git?
-neko owns /usr/bin/git
+mao owns /usr/bin/git
 
 # Clean up orphans, with preview first
-neko autoremove
+mao autoremove
 
 # Clean them up without the preview
-neko autoremove --no-info
+mao autoremove --no-info
 ```
 
-## Why "neko"?
+## Why "mao"?
 
-**Neko** (猫) is Japanese for cat — a little wink at paru's anime-flavored
-heritage. Also: cats are short, friendly, and get the job done. 🐱
+**Mao** (猫) is the sound a cat makes in Chinese — a nod to Maomao from
+*Kusuriya no Hitorigoto* (The Apothecary Diaries). Like her: small, precise,
+and gets the job done quietly. 🐱
 
 ## Contributing
 

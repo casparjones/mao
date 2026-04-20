@@ -1,12 +1,12 @@
-#compdef neko
-# neko completions for zsh
-# https://github.com/casparjones/neko
+#compdef mao
+# mao completions for zsh
+# https://github.com/casparjones/mao
 #
 # Place somewhere in $fpath, e.g.:
-#   ~/.local/share/zsh/site-functions/_neko
-#   /usr/share/zsh/site-functions/_neko
+#   ~/.local/share/zsh/site-functions/_mao
+#   /usr/share/zsh/site-functions/_mao
 
-_neko() {
+_mao() {
     local -a subcommands
     subcommands=(
         'update:Update system + AUR'
@@ -25,7 +25,7 @@ _neko() {
         'autoremove:Remove orphaned packages'
         'outdated:Show available updates'
         'help:Show help'
-        'version:Show neko & paru version'
+        'version:Show mao & paru version'
     )
 
     if (( CURRENT == 2 )); then
@@ -53,4 +53,4 @@ _neko() {
     esac
 }
 
-_neko "$@"
+_mao "$@"

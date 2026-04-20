@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# neko — a friendly wrapper around paru for Arch Linux.
-# https://github.com/casparjones/neko
+# mao — a friendly wrapper around paru for Arch Linux.
+# https://github.com/casparjones/mao
 
 set -o pipefail
 
-readonly NEKO_VERSION="0.1.1"
-readonly NEKO_REPO="https://github.com/casparjones/neko"
-readonly NEKO_HOMEPAGE="https://casparjones.github.io/neko/"
+readonly MAO_VERSION="0.1.1"
+readonly MAO_REPO="https://github.com/casparjones/mao"
+readonly MAO_HOMEPAGE="https://casparjones.github.io/mao/"
 
 # ---------------------------------------------------------------------------
 # Colors — respect NO_COLOR and only colorize on a real TTY.
@@ -30,16 +30,16 @@ fi
 # Output helpers
 # ---------------------------------------------------------------------------
 die() {
-    printf '%sneko:%s %s\n' "${C_RED}${C_BOLD}" "${C_RESET}" "$*" >&2
+    printf '%smaomao:%s %s\n' "${C_RED}${C_BOLD}" "${C_RESET}" "$*" >&2
     exit 1
 }
 
 warn() {
-    printf '%sneko:%s %s\n' "${C_YELLOW}" "${C_RESET}" "$*" >&2
+    printf '%smaomao:%s %s\n' "${C_YELLOW}" "${C_RESET}" "$*" >&2
 }
 
 info() {
-    printf '%sneko:%s %s\n' "${C_CYAN}" "${C_RESET}" "$*" >&2
+    printf '%smaomao:%s %s\n' "${C_CYAN}" "${C_RESET}" "$*" >&2
 }
 
 require_paru() {
@@ -53,7 +53,7 @@ require_paru() {
 }
 
 is_garuda() {
-    case "${NEKO_IS_GARUDA:-}" in
+    case "${MAO_IS_GARUDA:-}" in
         0) return 1 ;;
         1) return 0 ;;
     esac
@@ -64,11 +64,11 @@ is_garuda() {
 # Logo, help, version
 # ---------------------------------------------------------------------------
 print_logo() {
-    printf '%s    /\\_/\\  %s%sneko%s %sv%s%s\n' \
-        "${C_MAGENTA}" "${C_RESET}" "${C_BOLD}" "${C_RESET}" "${C_DIM}" "${NEKO_VERSION}" "${C_RESET}"
-    printf '%s   ( o.o ) %s%sparu, but friendlier%s\n' \
+    printf '%s   /\_/\   %s%smaomao%s %sv%s%s\n' \
+        "${C_MAGENTA}" "${C_RESET}" "${C_BOLD}" "${C_RESET}" "${C_DIM}" "${MAO_VERSION}" "${C_RESET}"
+    printf '%s  ( ^.^ )  %s%sparu, but friendlier%s\n' \
         "${C_MAGENTA}" "${C_RESET}" "${C_DIM}" "${C_RESET}"
-    printf '%s    > ^ <  %s\n' "${C_MAGENTA}" "${C_RESET}"
+    printf '%s   > ~ <   %s\n' "${C_MAGENTA}" "${C_RESET}"
 }
 
 print_help() {
@@ -76,8 +76,8 @@ print_help() {
     cat <<EOF
 
 ${C_BOLD}USAGE${C_RESET}
-  neko <command> [args...]
-  neko <paru-flags...>          ${C_DIM}# unknown args are passed to paru${C_RESET}
+  mao <command> [args...]
+  mao <paru-flags...>          ${C_DIM}# unknown args are passed to paru${C_RESET}
 
 ${C_BOLD}COMMANDS${C_RESET}
   ${C_GREEN}update${C_RESET}              Update system + AUR          ${C_DIM}(paru -Syu)${C_RESET}
@@ -96,24 +96,25 @@ ${C_BOLD}COMMANDS${C_RESET}
   ${C_GREEN}autoremove${C_RESET} [--no-info] Remove orphans             ${C_DIM}(paru -Rns \$(paru -Qtdq))${C_RESET}
   ${C_GREEN}outdated${C_RESET}            Show available updates       ${C_DIM}(paru -Qu)${C_RESET}
   ${C_GREEN}help${C_RESET}                Show this help
-  ${C_GREEN}version${C_RESET}             Show neko & paru version
+  ${C_GREEN}version${C_RESET}             Show mao & paru version
 
 ${C_BOLD}PASSTHROUGH${C_RESET}
   Anything that isn't a known subcommand is forwarded to paru 1:1:
-    neko -Syu            → paru -Syu
-    neko -Qi firefox     → paru -Qi firefox
+    mao -Syu            → paru -Syu
+    mao -Qi firefox     → paru -Qi firefox
 
-  The only flag neko intercepts is ${C_BOLD}-v${C_RESET}/${C_BOLD}--version${C_RESET}, which shows both
-  neko's and paru's version.
+  The only flag mao intercepts is ${C_BOLD}-v${C_RESET}/${C_BOLD}--version${C_RESET}, which shows both
+  mao's and paru's version.
 
 ${C_BOLD}MORE${C_RESET}
-  Homepage: ${C_BLUE}${NEKO_HOMEPAGE}${C_RESET}
-  Source:   ${C_BLUE}${NEKO_REPO}${C_RESET}
+  Homepage: ${C_BLUE}${MAO_HOMEPAGE}${C_RESET}
+  Source:   ${C_BLUE}${MAO_REPO}${C_RESET}
 EOF
 }
 
 print_version() {
-    printf '%sneko%s %s\n' "${C_BOLD}" "${C_RESET}" "${NEKO_VERSION}"
+    print_logo
+    printf '\n'
     if command -v paru >/dev/null 2>&1; then
         paru -V | head -n1
     fi
@@ -126,7 +127,7 @@ cmd_update() {
     if is_garuda; then
         local answer=""
         if [[ -t 0 ]]; then
-            printf '%sneko:%s Garuda detected. Run %sgaruda-update%s first? [Y/n] ' \
+            printf '%smaomao:%s Garuda detected. Run %sgaruda-update%s first? [Y/n] ' \
                 "${C_CYAN}" "${C_RESET}" "${C_BOLD}" "${C_RESET}" >&2
         fi
         IFS= read -r answer 2>/dev/null || answer=""
@@ -137,6 +138,7 @@ cmd_update() {
                 ;;
         esac
     fi
+    info "updating system and AUR packages → paru -Syu"
     exec paru -Syu "$@"
 }
 
@@ -158,7 +160,7 @@ cmd_autoremove() {
     fi
 
     if [[ $show_info -eq 1 ]]; then
-        printf '%sneko:%s the following orphaned packages will be removed:\n' \
+        printf '%smaomao:%s the following orphaned packages will be removed:\n' \
             "${C_CYAN}" "${C_RESET}" >&2
         while IFS= read -r pkg; do
             printf '  %s- %s%s\n' "${C_DIM}" "$pkg" "${C_RESET}" >&2
@@ -187,39 +189,62 @@ main() {
         help|--help|-h)        print_help ;;
         version|--version|-v)  print_version ;;
 
-        # Explicit passthrough separator: `neko -- <anything>` → paru <anything>
-        --)                    require_paru; exec paru "$@" ;;
+        # Explicit passthrough separator: `mao -- <anything>` → paru <anything>
+        --)                    require_paru
+                               info "passthrough → paru $*"
+                               exec paru "$@" ;;
 
         update)        require_paru; cmd_update "$@" ;;
-        update-db)     require_paru; exec paru -Syy "$@" ;;
+        update-db)     require_paru
+                       info "refreshing package databases → paru -Syy"
+                       exec paru -Syy "$@" ;;
         install)       require_paru
                        [[ $# -gt 0 ]] || die "install: at least one package name required"
+                       info "installing: $* → paru -S $*"
                        exec paru -S "$@" ;;
         remove)        require_paru
                        [[ $# -gt 0 ]] || die "remove: at least one package name required"
+                       info "removing: $* → paru -Rns $*"
                        exec paru -Rns "$@" ;;
         search)        require_paru
                        [[ $# -gt 0 ]] || die "search: a query is required"
+                       info "searching for: $* → paru -Ss $*"
                        exec paru -Ss "$@" ;;
         info)          require_paru
                        [[ $# -gt 0 ]] || die "info: package name required"
+                       info "package info: $* → paru -Si $*"
                        exec paru -Si "$@" ;;
-        list)          require_paru; exec paru -Qe "$@" ;;
-        list-all)      require_paru; exec paru -Q "$@" ;;
+        list)          require_paru
+                       info "explicitly installed packages → paru -Qe"
+                       exec paru -Qe "$@" ;;
+        list-all)      require_paru
+                       info "all installed packages → paru -Q"
+                       exec paru -Q "$@" ;;
         owns)          require_paru
                        [[ $# -gt 0 ]] || die "owns: file path required"
+                       info "owner of $* → paru -Qo $*"
                        exec paru -Qo "$@" ;;
         files)         require_paru
                        [[ $# -gt 0 ]] || die "files: package name required"
+                       info "files in $* → paru -Ql $*"
                        exec paru -Ql "$@" ;;
-        orphans)       require_paru; exec paru -Qtdq "$@" ;;
-        clean)         require_paru; exec paru -Sc "$@" ;;
-        clean-all)     require_paru; exec paru -Scc "$@" ;;
-        autoremove)    require_paru; cmd_autoremove ;;
-        outdated)      require_paru; exec paru -Qu "$@" ;;
+        orphans)       require_paru
+                       info "listing orphaned packages → paru -Qtdq"
+                       exec paru -Qtdq "$@" ;;
+        clean)         require_paru
+                       info "cleaning package cache → paru -Sc"
+                       exec paru -Sc "$@" ;;
+        clean-all)     require_paru
+                       info "emptying package cache → paru -Scc"
+                       exec paru -Scc "$@" ;;
+        autoremove)    require_paru; cmd_autoremove "$@" ;;
+        outdated)      require_paru
+                       info "checking for available updates → paru -Qu"
+                       exec paru -Qu "$@" ;;
 
         *)             # Everything else is passthrough.
                        require_paru
+                       info "passthrough → paru $cmd${*:+ $*}"
                        exec paru "$cmd" "$@" ;;
     esac
 }

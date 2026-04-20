@@ -1,20 +1,20 @@
 #!/bin/sh
-# neko installer — https://casparjones.github.io/neko/
+# mao installer — https://casparjones.github.io/mao/
 #
 # Usage:
-#   curl -sSL https://casparjones.github.io/neko/install.sh | sh
+#   curl -sSL https://casparjones.github.io/mao/install.sh | sh
 #
 # Environment overrides:
-#   NEKO_BRANCH       branch or tag to install from     (default: main)
-#   NEKO_INSTALL_DIR  explicit install directory
-#   NEKO_YES=1        non-interactive; answer yes to all prompts
+#   MAO_BRANCH       branch or tag to install from     (default: main)
+#   MAO_INSTALL_DIR  explicit install directory
+#   MAO_YES=1        non-interactive; answer yes to all prompts
 
 set -eu
 
-NEKO_BRANCH="${NEKO_BRANCH:-main}"
-NEKO_REPO_RAW="https://raw.githubusercontent.com/casparjones/neko/${NEKO_BRANCH}"
-NEKO_REPO="https://github.com/casparjones/neko"
-NEKO_HOMEPAGE="https://casparjones.github.io/neko/"
+MAO_BRANCH="${MAO_BRANCH:-main}"
+MAO_REPO_RAW="https://raw.githubusercontent.com/casparjones/mao/${MAO_BRANCH}"
+MAO_REPO="https://github.com/casparjones/mao"
+MAO_HOMEPAGE="https://casparjones.github.io/mao/"
 
 # ---------------------------------------------------------------------------
 # Colors (respect NO_COLOR; only colorize on a real TTY)
@@ -43,7 +43,7 @@ hr()   { printf '%s────────────────────�
 
 # ---------------------------------------------------------------------------
 # Interactive prompts — when run via `curl | sh`, stdin is the script,
-# so we read from /dev/tty if available. NEKO_YES=1 skips all prompts.
+# so we read from /dev/tty if available. MAO_YES=1 skips all prompts.
 # ---------------------------------------------------------------------------
 TTY=""
 if [ -t 0 ]; then
@@ -56,7 +56,7 @@ ANSWER=""
 
 ask() {
     _q="$1"; _d="${2:-n}"
-    if [ "${NEKO_YES:-0}" = "1" ]; then
+    if [ "${MAO_YES:-0}" = "1" ]; then
         printf '%s %s[auto: yes]%s\n' "$_q" "${C_DIM}" "${C_RESET}"
         return 0
     fi
@@ -79,7 +79,7 @@ ask() {
 
 ask_line() {
     _q="$1"; _d="${2:-}"
-    if [ "${NEKO_YES:-0}" = "1" ] || [ -z "$TTY" ]; then
+    if [ "${MAO_YES:-0}" = "1" ] || [ -z "$TTY" ]; then
         ANSWER="$_d"
         return 0
     fi
@@ -132,7 +132,7 @@ path_hint() {
 install_completion() {
     _name="$1"; _target="$2"
     mkdir -p "$(dirname "$_target")"
-    if download "$NEKO_REPO_RAW/completions/$_name" "$_target.tmp"; then
+    if download "$MAO_REPO_RAW/completions/$_name" "$_target.tmp"; then
         mv "$_target.tmp" "$_target"
         ok "installed $_target"
     else
@@ -153,18 +153,18 @@ install_completions() {
     fi
 
     if command -v fish >/dev/null 2>&1; then
-        if ask "  install fish completion → $fish_dir/neko.fish?" y; then
-            install_completion neko.fish "$fish_dir/neko.fish"
+        if ask "  install fish completion → $fish_dir/mao.fish?" y; then
+            install_completion mao.fish "$fish_dir/mao.fish"
         fi
     fi
     if command -v bash >/dev/null 2>&1; then
-        if ask "  install bash completion → $bash_dir/neko?" y; then
-            install_completion neko.bash "$bash_dir/neko"
+        if ask "  install bash completion → $bash_dir/mao?" y; then
+            install_completion mao.bash "$bash_dir/mao"
         fi
     fi
     if command -v zsh >/dev/null 2>&1; then
-        if ask "  install zsh completion  → $zsh_dir/_neko?" y; then
-            install_completion _neko "$zsh_dir/_neko"
+        if ask "  install zsh completion  → $zsh_dir/_mao?" y; then
+            install_completion _mao "$zsh_dir/_mao"
             warn "  make sure '$zsh_dir' is in your zsh \$fpath"
         fi
     fi
@@ -175,8 +175,9 @@ install_completions() {
 # ---------------------------------------------------------------------------
 main() {
     hr
-    printf '%s🐱 neko installer%s\n' "${C_BOLD}${C_MAGENTA}" "${C_RESET}"
-    printf '%s%s%s\n' "${C_DIM}" "$NEKO_HOMEPAGE" "${C_RESET}"
+    printf '%s   /\_/\   %s\n' "${C_MAGENTA}" "${C_RESET}"
+    printf '%s  ( ^.^ )  %s%smao installer%s\n' "${C_MAGENTA}" "${C_RESET}" "${C_BOLD}${C_MAGENTA}" "${C_RESET}"
+    printf '%s   > ~ <   %s%s%s%s\n' "${C_MAGENTA}" "${C_RESET}" "${C_DIM}" "$MAO_HOMEPAGE" "${C_RESET}"
     hr
 
     require_cmd curl
@@ -196,36 +197,36 @@ main() {
             install_paru
             ok "paru installed"
         else
-            warn "skipping paru install — neko won't work until paru is available."
+            warn "skipping paru install — mao won't work until paru is available."
         fi
     fi
 
     # 3. choose install dir
-    if [ -n "${NEKO_INSTALL_DIR:-}" ]; then
-        install_dir="$NEKO_INSTALL_DIR"
+    if [ -n "${MAO_INSTALL_DIR:-}" ]; then
+        install_dir="$MAO_INSTALL_DIR"
     elif [ "$(id -u)" -eq 0 ]; then
         install_dir="/usr/local/bin"
     else
-        ask_line "Install neko to which directory?" "$HOME/.local/bin"
+        ask_line "Install mao to which directory?" "$HOME/.local/bin"
         install_dir="$ANSWER"
     fi
-    install_path="$install_dir/neko"
+    install_path="$install_dir/mao"
 
     if [ -f "$install_path" ]; then
-        say "updating neko at $install_path"
+        say "updating mao at $install_path"
     else
-        say "installing neko → $install_path"
+        say "installing mao → $install_path"
     fi
     mkdir -p "$install_dir"
 
-    # 4. download neko
-    if ! download "$NEKO_REPO_RAW/neko" "$install_path.tmp"; then
+    # 4. download mao
+    if ! download "$MAO_REPO_RAW/mao" "$install_path.tmp"; then
         rm -f "$install_path.tmp"
-        die "failed to download neko from $NEKO_REPO_RAW/neko"
+        die "failed to download mao from $MAO_REPO_RAW/mao"
     fi
     chmod +x "$install_path.tmp"
     mv "$install_path.tmp" "$install_path"
-    ok "neko installed at $install_path"
+    ok "mao installed at $install_path"
 
     # 5. PATH check
     case ":$PATH:" in
@@ -244,8 +245,8 @@ main() {
     fi
 
     hr
-    ok "done! try: ${C_BOLD}neko help${C_RESET}"
-    printf '  homepage: %s%s%s\n' "${C_BLUE}" "$NEKO_HOMEPAGE" "${C_RESET}"
+    ok "done! try: ${C_BOLD}mao help${C_RESET}"
+    printf '  homepage: %s%s%s\n' "${C_BLUE}" "$MAO_HOMEPAGE" "${C_RESET}"
     hr
 }
 

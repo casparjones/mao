@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test.sh — smoke tests for neko.
+# test.sh — smoke tests for mao.
 #
 # Uses a fake `paru` stub in a temp dir on PATH so no real packages are
 # touched. Verifies:
@@ -13,9 +13,9 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-NEKO="$SCRIPT_DIR/neko"
+MAO="$SCRIPT_DIR/mao"
 
-[ -x "$NEKO" ] || { echo "no executable neko at $NEKO"; exit 1; }
+[ -x "$MAO" ] || { echo "no executable mao at $MAO"; exit 1; }
 
 PASS=0
 FAIL=0
@@ -51,16 +51,16 @@ export NO_COLOR=1
 
 # Force the Garuda detection off by default so tests behave the same on
 # Garuda and non-Garuda hosts. The Garuda-specific test flips this on.
-export NEKO_IS_GARUDA=0
+export MAO_IS_GARUDA=0
 
 # --------------------------------------------------------------------------
 # Helpers
 # --------------------------------------------------------------------------
 expect_args() {
-    # expect_args <desc> <expected-stdout> <neko-args...>
+    # expect_args <desc> <expected-stdout> <mao-args...>
     local desc="$1" expected="$2"; shift 2
     local actual
-    actual="$("$NEKO" "$@" 2>/dev/null)" || true
+    actual="$("$MAO" "$@" 2>/dev/null)" || true
     if [ "$actual" = "$expected" ]; then
         pass_case "$desc"
     else
@@ -71,10 +71,10 @@ expect_args() {
 }
 
 expect_contains() {
-    # expect_contains <desc> <needle> <neko-args...>
+    # expect_contains <desc> <needle> <mao-args...>
     local desc="$1" needle="$2"; shift 2
     local actual
-    actual="$("$NEKO" "$@" 2>&1)" || true
+    actual="$("$MAO" "$@" 2>&1)" || true
     if printf '%s' "$actual" | grep -qF -- "$needle"; then
         pass_case "$desc"
     else
@@ -86,13 +86,14 @@ expect_contains() {
 # --------------------------------------------------------------------------
 # Tests
 # --------------------------------------------------------------------------
-echo "Running neko tests…"
+echo "Running mao tests…"
 
 # Help / version / logo
 expect_contains "help mentions USAGE"              "USAGE"                 help
-expect_contains "bare neko prints help"            "COMMANDS"
-expect_contains "--version shows neko version"     "neko 0.1.1"            --version
-expect_contains "--version shows paru version"    "paru v9.9.9"           --version
+expect_contains "bare mao prints help"             "COMMANDS"
+expect_contains "--version shows maomao"           "maomao"                --version
+expect_contains "--version shows version number"   "0.1.1"                 --version
+expect_contains "--version shows paru version"     "paru v9.9.9"           --version
 expect_contains "help mentions homepage"           "casparjones.github.io" help
 
 # Subcommand translations
@@ -124,14 +125,14 @@ expect_args "-- -v → paru -v"        "ARG:-v"                                 
 expect_args "autoremove --no-info"   "$(printf 'ARG:-Rns\nARG:fake-orphan-1\nARG:fake-orphan-2')" autoremove --no-info
 
 # autoremove WITHOUT --no-info: preview goes to stderr
-preview="$("$NEKO" autoremove 2>&1 >/dev/null)" || true
+preview="$("$MAO" autoremove 2>&1 >/dev/null)" || true
 if printf '%s' "$preview" | grep -q "fake-orphan-1"; then
     pass_case "autoremove preview lists orphans on stderr"
 else
     fail_case "autoremove preview lists orphans on stderr"
 fi
 
-# Garuda flow: with NEKO_IS_GARUDA=1 and a garuda-update stub, `neko update`
+# Garuda flow: with MAO_IS_GARUDA=1 and a garuda-update stub, `mao update`
 # should run garuda-update first, then paru -Syu. Non-interactive stdin ⇒
 # default answer is Y.
 GARUDA_MARKER="$STUB_DIR/garuda-update.called"
@@ -141,7 +142,7 @@ printf 'garuda-update ran\n' > "$GARUDA_MARKER"
 STUB
 chmod +x "$STUB_DIR/garuda-update"
 
-garuda_out="$(NEKO_IS_GARUDA=1 "$NEKO" update </dev/null 2>/dev/null)" || true
+garuda_out="$(MAO_IS_GARUDA=1 "$MAO" update </dev/null 2>/dev/null)" || true
 if [ "$garuda_out" = "ARG:-Syu" ] && [ -f "$GARUDA_MARKER" ]; then
     pass_case "garuda: default-Y runs garuda-update then paru -Syu"
 else
@@ -152,7 +153,7 @@ fi
 rm -f "$GARUDA_MARKER"
 
 # Declining the prompt should skip garuda-update and still run paru -Syu.
-garuda_out="$(printf 'n\n' | NEKO_IS_GARUDA=1 "$NEKO" update 2>/dev/null)" || true
+garuda_out="$(printf 'n\n' | MAO_IS_GARUDA=1 "$MAO" update 2>/dev/null)" || true
 if [ "$garuda_out" = "ARG:-Syu" ] && [ ! -f "$GARUDA_MARKER" ]; then
     pass_case "garuda: answering n skips garuda-update"
 else
@@ -162,8 +163,8 @@ else
 fi
 rm -f "$GARUDA_MARKER"
 
-# Error paths: missing required args (capture first — neko exits non-zero on die)
-out="$("$NEKO" install 2>&1)" || true
+# Error paths: missing required args (capture first — mao exits non-zero on die)
+out="$("$MAO" install 2>&1)" || true
 if printf '%s' "$out" | grep -q "package name required"; then
     pass_case "install without args errors out"
 else
@@ -177,7 +178,7 @@ for cmd in env bash; do
     src="$(PATH=/usr/bin:/bin command -v "$cmd" 2>/dev/null || true)"
     [ -n "$src" ] && ln -s "$src" "$minimal_path/$cmd"
 done
-out="$(PATH="$minimal_path" "$NEKO" install firefox 2>&1)" || true
+out="$(PATH="$minimal_path" "$MAO" install firefox 2>&1)" || true
 if printf '%s' "$out" | grep -q "paru is not installed"; then
     pass_case "missing paru produces a helpful error"
 else

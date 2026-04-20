@@ -1,11 +1,11 @@
-# neko completions for bash
-# https://github.com/casparjones/neko
+# mao completions for bash
+# https://github.com/casparjones/mao
 #
 # Install to one of:
-#   ~/.local/share/bash-completion/completions/neko
-#   /usr/share/bash-completion/completions/neko
+#   ~/.local/share/bash-completion/completions/mao
+#   /usr/share/bash-completion/completions/mao
 
-_neko() {
+_mao() {
     local cur prev cmds subcmd
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
@@ -40,4 +40,4 @@ _neko() {
     esac
 }
 
-complete -F _neko neko
+complete -F _mao mao
