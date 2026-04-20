@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>neko — paru, but friendlier</title>
+<title>mao — paru, but friendlier</title>
 <meta name="description" content="A friendly wrapper around paru for Arch Linux. Drop-in compatible, with sprechende sub-commands instead of cryptic flags.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐱</text></svg>">
 <style>
@@ -156,21 +156,21 @@
 <div class="container">
 
   <header>
-    <div class="brand"><span class="cat">🐱</span>neko</div>
+    <div class="brand"><span class="cat">🐱</span>mao</div>
     <nav>
       <a href="#commands">commands</a>
       <a href="#install">install</a>
-      <a href="https://github.com/casparjones/neko">github</a>
+      <a href="https://github.com/casparjones/mao">github</a>
       <button class="theme-toggle" id="themeToggle" aria-label="toggle theme">🌙 dark</button>
     </nav>
   </header>
 
   <section class="hero">
-    <h1>🐱 neko</h1>
+    <h1>🐱 mao</h1>
     <p class="tagline"><code>paru</code>, but friendlier.</p>
 
     <div class="install-box" id="installBox">
-      <code id="installCmd">curl -sSL https://casparjones.github.io/neko/install.sh | sh</code>
+      <code id="installCmd">curl -sSL https://casparjones.github.io/mao/install.sh | sh</code>
       <button class="copy-btn" id="copyBtn" aria-label="copy install command">copy</button>
     </div>
   </section>
@@ -178,9 +178,9 @@
   <h2>Why?</h2>
   <p>
     <code>paru</code> is great, but its <code>pacman</code>-style flags are hard to
-    discover and easy to forget. <strong>neko</strong> wraps paru with readable
-    sub-commands — <code>neko install firefox</code>, <code>neko update</code>,
-    <code>neko search wine</code> — while still passing any paru flag through
+    discover and easy to forget. <strong>mao</strong> wraps paru with readable
+    sub-commands — <code>mao install firefox</code>, <code>mao update</code>,
+    <code>mao search wine</code> — while still passing any paru flag through
     unchanged. Your muscle memory keeps working.
   </p>
 
@@ -188,54 +188,54 @@
   <div class="table-wrap">
   <table>
     <thead>
-      <tr><th>neko</th><th>paru</th><th>description</th></tr>
+      <tr><th>mao</th><th>paru</th><th>description</th></tr>
     </thead>
     <tbody>
-      <tr><td><code>neko update</code></td><td><code>paru -Syu</code></td><td>update system + AUR</td></tr>
-      <tr><td><code>neko update-db</code></td><td><code>paru -Syy</code></td><td>refresh package database</td></tr>
-      <tr><td><code>neko install &lt;pkg&gt;</code></td><td><code>paru -S &lt;pkg&gt;</code></td><td>install package(s)</td></tr>
-      <tr><td><code>neko remove &lt;pkg&gt;</code></td><td><code>paru -Rns &lt;pkg&gt;</code></td><td>remove pkg + deps + configs</td></tr>
-      <tr><td><code>neko search &lt;q&gt;</code></td><td><code>paru -Ss &lt;q&gt;</code></td><td>search repos and AUR</td></tr>
-      <tr><td><code>neko info &lt;pkg&gt;</code></td><td><code>paru -Si &lt;pkg&gt;</code></td><td>package details</td></tr>
-      <tr><td><code>neko list</code></td><td><code>paru -Qe</code></td><td>explicitly installed packages</td></tr>
-      <tr><td><code>neko list-all</code></td><td><code>paru -Q</code></td><td>all installed packages</td></tr>
-      <tr><td><code>neko owns &lt;file&gt;</code></td><td><code>paru -Qo &lt;file&gt;</code></td><td>which package owns a file</td></tr>
-      <tr><td><code>neko files &lt;pkg&gt;</code></td><td><code>paru -Ql &lt;pkg&gt;</code></td><td>files belonging to a package</td></tr>
-      <tr><td><code>neko orphans</code></td><td><code>paru -Qtdq</code></td><td>list orphaned packages</td></tr>
-      <tr><td><code>neko clean</code></td><td><code>paru -Sc</code></td><td>clean package cache</td></tr>
-      <tr><td><code>neko clean-all</code></td><td><code>paru -Scc</code></td><td>empty package cache</td></tr>
-      <tr><td><code>neko autoremove</code></td><td><code>paru -Rns $(paru -Qtdq)</code></td><td>remove orphans (shows preview)</td></tr>
-      <tr><td><code>neko outdated</code></td><td><code>paru -Qu</code></td><td>show available updates</td></tr>
-      <tr><td><code>neko -Syu</code></td><td><code>paru -Syu</code></td><td>any paru flag is passed through 1:1</td></tr>
+      <tr><td><code>mao update</code></td><td><code>paru -Syu</code></td><td>update system + AUR</td></tr>
+      <tr><td><code>mao update-db</code></td><td><code>paru -Syy</code></td><td>refresh package database</td></tr>
+      <tr><td><code>mao install &lt;pkg&gt;</code></td><td><code>paru -S &lt;pkg&gt;</code></td><td>install package(s)</td></tr>
+      <tr><td><code>mao remove &lt;pkg&gt;</code></td><td><code>paru -Rns &lt;pkg&gt;</code></td><td>remove pkg + deps + configs</td></tr>
+      <tr><td><code>mao search &lt;q&gt;</code></td><td><code>paru -Ss &lt;q&gt;</code></td><td>search repos and AUR</td></tr>
+      <tr><td><code>mao info &lt;pkg&gt;</code></td><td><code>paru -Si &lt;pkg&gt;</code></td><td>package details</td></tr>
+      <tr><td><code>mao list</code></td><td><code>paru -Qe</code></td><td>explicitly installed packages</td></tr>
+      <tr><td><code>mao list-all</code></td><td><code>paru -Q</code></td><td>all installed packages</td></tr>
+      <tr><td><code>mao owns &lt;file&gt;</code></td><td><code>paru -Qo &lt;file&gt;</code></td><td>which package owns a file</td></tr>
+      <tr><td><code>mao files &lt;pkg&gt;</code></td><td><code>paru -Ql &lt;pkg&gt;</code></td><td>files belonging to a package</td></tr>
+      <tr><td><code>mao orphans</code></td><td><code>paru -Qtdq</code></td><td>list orphaned packages</td></tr>
+      <tr><td><code>mao clean</code></td><td><code>paru -Sc</code></td><td>clean package cache</td></tr>
+      <tr><td><code>mao clean-all</code></td><td><code>paru -Scc</code></td><td>empty package cache</td></tr>
+      <tr><td><code>mao autoremove</code></td><td><code>paru -Rns $(paru -Qtdq)</code></td><td>remove orphans (shows preview)</td></tr>
+      <tr><td><code>mao outdated</code></td><td><code>paru -Qu</code></td><td>show available updates</td></tr>
+      <tr><td><code>mao -Syu</code></td><td><code>paru -Syu</code></td><td>any paru flag is passed through 1:1</td></tr>
     </tbody>
   </table>
   </div>
 
   <h2 id="install">Install</h2>
   <p>One-liner:</p>
-  <pre><code>curl -sSL https://casparjones.github.io/neko/install.sh | sh</code></pre>
+  <pre><code>curl -sSL https://casparjones.github.io/mao/install.sh | sh</code></pre>
   <p>The installer will:</p>
   <ul>
     <li>check you're on an Arch-based system</li>
     <li>offer to install <code>paru</code> if it's missing</li>
-    <li>place <code>neko</code> in <code>~/.local/bin</code> (or <code>/usr/local/bin</code> as root)</li>
+    <li>place <code>mao</code> in <code>~/.local/bin</code> (or <code>/usr/local/bin</code> as root)</li>
     <li>optionally install shell completions (fish / bash / zsh)</li>
   </ul>
   <p>Prefer reading the script first? <a href="install.sh">view install.sh</a>.</p>
 
   <h3>Manual install</h3>
-  <pre><code>curl -fsSLo ~/.local/bin/neko https://raw.githubusercontent.com/casparjones/neko/main/neko
-chmod +x ~/.local/bin/neko</code></pre>
+  <pre><code>curl -fsSLo ~/.local/bin/mao https://raw.githubusercontent.com/casparjones/mao/main/mao
+chmod +x ~/.local/bin/mao</code></pre>
 
-  <h2>Why "neko"?</h2>
+  <h2>Why "mao"?</h2>
   <p>
-    <em>Neko</em> (猫) is Japanese for cat — a little wink at
-    <code>paru</code>'s anime-flavored heritage. Also: cats are short,
-    friendly, and get the job done. 🐱
+    <em>Mao</em> (猫) is the sound a cat makes in Chinese — a nod to Maomao from
+    <em>Kusuriya no Hitorigoto</em> (The Apothecary Diaries). Like her: small,
+    precise, and gets the job done quietly. 🐱
   </p>
 
   <footer>
-    MIT &middot; <a href="https://github.com/casparjones/neko">source on github</a> &middot; no tracking, no external fonts
+    MIT &middot; <a href="https://github.com/casparjones/mao">source on github</a> &middot; no tracking, no external fonts
   </footer>
 
 </div>
@@ -244,7 +244,7 @@ chmod +x ~/.local/bin/neko</code></pre>
 (function() {
   var root = document.documentElement;
   var toggle = document.getElementById('themeToggle');
-  var stored = localStorage.getItem('neko-theme');
+  var stored = localStorage.getItem('mao-theme');
   if (stored) root.setAttribute('data-theme', stored);
 
   function render() {
@@ -256,7 +256,7 @@ chmod +x ~/.local/bin/neko</code></pre>
   toggle.addEventListener('click', function() {
     var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
     root.setAttribute('data-theme', next);
-    localStorage.setItem('neko-theme', next);
+    localStorage.setItem('mao-theme', next);
     render();
   });
 
