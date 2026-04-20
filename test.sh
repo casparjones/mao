@@ -49,6 +49,10 @@ chmod +x "$STUB_DIR/paru"
 export PATH="$STUB_DIR:$PATH"
 export NO_COLOR=1
 
+# Force the Garuda detection off by default so tests behave the same on
+# Garuda and non-Garuda hosts. The Garuda-specific test flips this on.
+export NEKO_IS_GARUDA=0
+
 # --------------------------------------------------------------------------
 # Helpers
 # --------------------------------------------------------------------------
@@ -126,6 +130,37 @@ if printf '%s' "$preview" | grep -q "fake-orphan-1"; then
 else
     fail_case "autoremove preview lists orphans on stderr"
 fi
+
+# Garuda flow: with NEKO_IS_GARUDA=1 and a garuda-update stub, `neko update`
+# should run garuda-update first, then paru -Syu. Non-interactive stdin ⇒
+# default answer is Y.
+GARUDA_MARKER="$STUB_DIR/garuda-update.called"
+cat > "$STUB_DIR/garuda-update" <<STUB
+#!/usr/bin/env bash
+printf 'garuda-update ran\n' > "$GARUDA_MARKER"
+STUB
+chmod +x "$STUB_DIR/garuda-update"
+
+garuda_out="$(NEKO_IS_GARUDA=1 "$NEKO" update </dev/null 2>/dev/null)" || true
+if [ "$garuda_out" = "ARG:-Syu" ] && [ -f "$GARUDA_MARKER" ]; then
+    pass_case "garuda: default-Y runs garuda-update then paru -Syu"
+else
+    fail_case "garuda: default-Y runs garuda-update then paru -Syu"
+    printf '    stdout:  %q\n' "$garuda_out"
+    printf '    marker:  %s\n' "$([ -f "$GARUDA_MARKER" ] && echo present || echo missing)"
+fi
+rm -f "$GARUDA_MARKER"
+
+# Declining the prompt should skip garuda-update and still run paru -Syu.
+garuda_out="$(printf 'n\n' | NEKO_IS_GARUDA=1 "$NEKO" update 2>/dev/null)" || true
+if [ "$garuda_out" = "ARG:-Syu" ] && [ ! -f "$GARUDA_MARKER" ]; then
+    pass_case "garuda: answering n skips garuda-update"
+else
+    fail_case "garuda: answering n skips garuda-update"
+    printf '    stdout:  %q\n' "$garuda_out"
+    printf '    marker:  %s\n' "$([ -f "$GARUDA_MARKER" ] && echo present || echo missing)"
+fi
+rm -f "$GARUDA_MARKER"
 
 # Error paths: missing required args (capture first — neko exits non-zero on die)
 out="$("$NEKO" install 2>&1)" || true

@@ -53,7 +53,11 @@ require_paru() {
 }
 
 is_garuda() {
-    [[ -x /usr/bin/garuda-update ]]
+    case "${NEKO_IS_GARUDA:-}" in
+        0) return 1 ;;
+        1) return 0 ;;
+    esac
+    command -v garuda-update >/dev/null 2>&1
 }
 
 # ---------------------------------------------------------------------------
@@ -121,7 +125,18 @@ print_version() {
 # ---------------------------------------------------------------------------
 cmd_update() {
     if is_garuda; then
-        info "Garuda detected. For a full rolling update you may prefer ${C_BOLD}garuda-update${C_RESET}."
+        local answer=""
+        if [[ -t 0 ]]; then
+            printf '%sneko:%s Garuda detected. Run %sgaruda-update%s first? [Y/n] ' \
+                "${C_CYAN}" "${C_RESET}" "${C_BOLD}" "${C_RESET}" >&2
+        fi
+        IFS= read -r answer 2>/dev/null || answer=""
+        case "${answer,,}" in
+            ""|y|yes)
+                info "Running garuda-update…"
+                garuda-update || die "garuda-update failed"
+                ;;
+        esac
     fi
     exec paru -Syu "$@"
 }
