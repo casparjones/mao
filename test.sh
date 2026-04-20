@@ -91,7 +91,7 @@ echo "Running neko tests…"
 # Help / version / logo
 expect_contains "help mentions USAGE"              "USAGE"                 help
 expect_contains "bare neko prints help"            "COMMANDS"
-expect_contains "--version shows neko version"     "neko 0.1.0"            --version
+expect_contains "--version shows neko version"     "neko 0.1.1"            --version
 expect_contains "--version shows paru version"    "paru v9.9.9"           --version
 expect_contains "help mentions homepage"           "casparjones.github.io" help
 

@@ -77,12 +77,8 @@ neko -Qi firefox           # → paru -Qi firefox
 neko --aur firefox         # → paru --aur firefox
 ```
 
-The **only** flag neko intercepts is `-v` / `--version` (shows neko's own
-version). To reach paru's own `-v` (verbose), use `--` as a separator:
-
-```sh
-neko -- -v                 # → paru -v
-```
+The **only** flag neko intercepts is `-v` / `--version`, which shows both
+neko's and paru's version.
 
 ## Examples
 

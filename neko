@@ -4,7 +4,7 @@
 
 set -o pipefail
 
-readonly NEKO_VERSION="0.1.0"
+readonly NEKO_VERSION="0.1.1"
 readonly NEKO_REPO="https://github.com/casparjones/neko"
 readonly NEKO_HOMEPAGE="https://casparjones.github.io/neko/"
 
@@ -103,9 +103,8 @@ ${C_BOLD}PASSTHROUGH${C_RESET}
     neko -Syu            → paru -Syu
     neko -Qi firefox     → paru -Qi firefox
 
-  The only flag neko intercepts is ${C_BOLD}-v${C_RESET}/${C_BOLD}--version${C_RESET} (shows neko's version).
-  To reach paru's own ${C_BOLD}-v${C_RESET} (verbose), use ${C_BOLD}--${C_RESET} as a separator:
-    neko -- -v           → paru -v
+  The only flag neko intercepts is ${C_BOLD}-v${C_RESET}/${C_BOLD}--version${C_RESET}, which shows both
+  neko's and paru's version.
 
 ${C_BOLD}MORE${C_RESET}
   Homepage: ${C_BLUE}${NEKO_HOMEPAGE}${C_RESET}
