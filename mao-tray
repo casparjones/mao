@@ -132,11 +132,18 @@ class UpdateThread(QThread):
         garuda = _is_garuda()
         log.info("silent update started (garuda=%s, shutdown_after=%s)", garuda, self.shutdown_after)
         try:
-            # On Garuda: run garuda-update first (handles system + Garuda-specific pkgs),
-            # then paru -Syu for any remaining AUR packages — mirrors `mao update` behaviour.
+            # On Garuda: garuda-update must run as root (it calls sudo internally which
+            # requires a TTY when running headless). We use `sudo -n` (non-interactive)
+            # so it fails fast if the sudoers entry is missing.
+            # Required sudoers entry:
+            #   %wheel ALL=(ALL) NOPASSWD: /usr/bin/pacman, /usr/bin/garuda-update
             if garuda:
-                if not self._run_cmd(["garuda-update", "--noconfirm"]):
-                    self.done.emit(False, "garuda-update failed")
+                if not self._run_cmd(["sudo", "-n", "garuda-update", "--noconfirm"]):
+                    log.error(
+                        "garuda-update needs passwordless sudo — add to /etc/sudoers.d/mao-tray:\n"
+                        "  %%wheel ALL=(ALL) NOPASSWD: /usr/bin/pacman, /usr/bin/garuda-update"
+                    )
+                    self.done.emit(False, "garuda-update failed (sudoers not configured?)")
                     return
 
             if not self._run_cmd(["paru", "-Syu", "--noconfirm", "--noprogressbar"]):
