@@ -4,290 +4,720 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>mao — paru, but friendlier</title>
-<meta name="description" content="A friendly wrapper around paru for Arch Linux. Drop-in compatible, with sprechende sub-commands instead of cryptic flags.">
+<meta name="description" content="mao wraps paru with readable sub-commands for Arch Linux. mao update, mao install, mao search — no cryptic flags.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐱</text></svg>">
 <style>
-  :root {
-    --bg: #0d1117;
-    --bg-alt: #161b22;
-    --fg: #e6edf3;
-    --fg-dim: #8b949e;
-    --accent: #f78166;
-    --accent-2: #a5d6ff;
-    --border: #30363d;
-    --code-bg: #1c2128;
-  }
-  :root[data-theme="light"] {
-    --bg: #ffffff;
-    --bg-alt: #f6f8fa;
-    --fg: #1f2328;
-    --fg-dim: #59636e;
-    --accent: #cf222e;
-    --accent-2: #0969da;
-    --border: #d0d7de;
-    --code-bg: #f6f8fa;
-  }
-  * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; }
-  body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-    line-height: 1.6;
-    color: var(--fg);
-    background: var(--bg);
-  }
-  code, pre, kbd {
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-  }
-  a { color: var(--accent-2); text-decoration: none; }
-  a:hover { text-decoration: underline; }
+/* ── tokens ── */
+:root {
+  --bg:          #0a0c16;
+  --bg-card:     rgba(14, 17, 30, 0.82);
+  --fg:          #ddd8f0;
+  --fg-dim:      #7d7a9a;
+  --fg-muted:    #44415e;
+  --purple:      #9c8ecf;
+  --purple-lt:   #c4b5fd;
+  --purple-dk:   #6d5fa8;
+  --coral:       #f78166;
+  --border:      rgba(156, 142, 207, 0.13);
+  --border-hi:   rgba(156, 142, 207, 0.32);
+  --glow:        rgba(156, 142, 207, 0.18);
+  --code-bg:     rgba(8, 9, 18, 0.9);
+  --mono: ui-monospace, 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', monospace;
+  --sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+[data-theme="light"] {
+  --bg:        #f4f2fc;
+  --bg-card:   rgba(255,255,255,0.85);
+  --fg:        #1a1730;
+  --fg-dim:    #6b6689;
+  --fg-muted:  #b0adc8;
+  --border:    rgba(109, 95, 168, 0.14);
+  --border-hi: rgba(109, 95, 168, 0.35);
+  --glow:      rgba(109, 95, 168, 0.12);
+  --code-bg:   rgba(230, 227, 245, 0.8);
+  --purple:    #6d5fa8;
+  --purple-lt: #9c8ecf;
+  --purple-dk: #4e4280;
+}
 
-  .container { max-width: 860px; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
+/* ── reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--fg);
+  line-height: 1.65;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+a { color: var(--purple-lt); text-decoration: none; }
+a:hover { text-decoration: underline; }
 
-  header {
-    display: flex; justify-content: space-between; align-items: center;
-    gap: 1rem; flex-wrap: wrap;
-  }
-  .brand { font-weight: 600; font-size: 1.1rem; }
-  .brand .cat { margin-right: 0.35rem; }
-  nav { display: inline-flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
-  nav a {
-    color: var(--fg-dim);
-    font-size: 0.9rem;
-  }
-  nav a:hover { color: var(--fg); text-decoration: none; }
-  .theme-toggle {
-    background: none; border: 1px solid var(--border);
-    color: var(--fg-dim); padding: 0.3rem 0.6rem; border-radius: 6px;
-    cursor: pointer; font: inherit; font-size: 0.85rem;
-  }
-  .theme-toggle:hover { color: var(--fg); border-color: var(--fg-dim); }
+/* ── canvas background ── */
+#bg {
+  position: fixed; inset: 0; z-index: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+}
 
-  .hero {
-    text-align: center;
-    padding: 3rem 0 2rem;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 2rem;
-  }
-  .hero h1 {
-    font-size: clamp(2.2rem, 7vw, 3.2rem);
-    margin: 0 0 0.5rem;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-  }
-  .hero .tagline {
-    color: var(--fg-dim); font-size: 1.15rem; margin: 0 0 2rem;
-  }
+/* ── layout ── */
+.wrap {
+  position: relative; z-index: 1;
+  max-width: 820px; margin: 0 auto;
+  padding: 1.5rem 1.25rem 5rem;
+}
 
-  .install-box {
-    background: var(--code-bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    display: flex; align-items: stretch;
-    max-width: 680px; margin: 0 auto;
-    overflow: hidden;
-    text-align: left;
-  }
-  .install-box code {
-    flex: 1; padding: 0.9rem 1rem;
-    overflow-x: auto; white-space: nowrap;
-    font-size: 0.92rem;
-  }
-  .copy-btn {
-    background: transparent; border: none; border-left: 1px solid var(--border);
-    color: var(--fg-dim); padding: 0 1rem;
-    cursor: pointer; font: inherit; font-size: 0.85rem;
-    white-space: nowrap;
-  }
-  .copy-btn:hover { color: var(--accent); background: var(--bg-alt); }
-  .copy-btn.copied { color: var(--accent-2); }
+/* ── nav ── */
+nav {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 1rem; flex-wrap: wrap; margin-bottom: 0;
+  padding-bottom: 1.5rem;
+}
+.brand {
+  font-family: var(--mono);
+  font-size: 1rem; font-weight: 600;
+  color: var(--fg);
+  display: flex; align-items: center; gap: 0.4rem;
+}
+.nav-links { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; }
+.nav-links a { color: var(--fg-dim); font-size: 0.875rem; }
+.nav-links a:hover { color: var(--fg); text-decoration: none; }
+.theme-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--fg-dim);
+  padding: 0.28rem 0.65rem;
+  border-radius: 6px;
+  cursor: pointer; font: inherit; font-size: 0.8rem;
+}
+.theme-btn:hover { color: var(--fg); border-color: var(--border-hi); }
 
-  h2 {
-    font-size: 1.35rem; margin-top: 2.5rem; padding-bottom: 0.35rem;
-    border-bottom: 1px solid var(--border);
-  }
-  h3 { font-size: 1.05rem; margin-top: 1.5rem; }
-  p { margin: 0.8rem 0; }
-  p code, li code, td code {
-    background: var(--code-bg);
-    padding: 0.12rem 0.4rem;
-    border-radius: 4px;
-    font-size: 0.88em;
-  }
+/* ── hero ── */
+.hero {
+  text-align: center;
+  padding: 3.5rem 0 3rem;
+}
+.cat-art {
+  font-family: var(--mono);
+  font-size: clamp(1rem, 4vw, 1.5rem);
+  line-height: 1.35;
+  color: var(--purple-lt);
+  display: inline-block;
+  margin-bottom: 1.75rem;
+  text-shadow: 0 0 28px rgba(156,142,207,0.45), 0 0 60px rgba(156,142,207,0.18);
+  animation: cat-pulse 4s ease-in-out infinite;
+  white-space: pre;
+  user-select: none;
+}
+@keyframes cat-pulse {
+  0%,100% { text-shadow: 0 0 28px rgba(156,142,207,0.45), 0 0 60px rgba(156,142,207,0.18); }
+  50%      { text-shadow: 0 0 40px rgba(156,142,207,0.7),  0 0 80px rgba(156,142,207,0.28); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cat-art { animation: none; }
+}
 
-  .table-wrap { overflow-x: auto; }
-  table {
-    width: 100%; border-collapse: collapse; margin: 1rem 0;
-    font-size: 0.9rem;
-  }
-  th, td {
-    text-align: left; padding: 0.55rem 0.75rem;
-    border-bottom: 1px solid var(--border);
-  }
-  th {
-    color: var(--fg-dim); font-weight: 600;
-    font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px;
-  }
+.hero-title {
+  font-family: var(--mono);
+  font-size: clamp(2.4rem, 8vw, 3.6rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin-bottom: 0.6rem;
+  display: flex; align-items: baseline;
+  justify-content: center; gap: 0.5rem; flex-wrap: wrap;
+}
+.version-badge {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  font-weight: 500;
+  background: rgba(156,142,207,0.12);
+  border: 1px solid var(--border-hi);
+  color: var(--purple-lt);
+  padding: 0.2em 0.75em;
+  border-radius: 20px;
+  vertical-align: middle;
+  letter-spacing: 0;
+  animation: badge-in 0.6s ease both 0.4s;
+}
+@keyframes badge-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .version-badge { animation: none; }
+}
 
-  pre {
-    background: var(--code-bg); border: 1px solid var(--border);
-    padding: 0.9rem 1rem; border-radius: 6px; overflow-x: auto;
-    font-size: 0.88rem;
-  }
-  pre code { background: none; padding: 0; }
+.tagline {
+  color: var(--fg-dim);
+  font-size: 1.15rem;
+  margin-bottom: 2.25rem;
+}
+.tagline code {
+  color: var(--fg);
+  background: var(--code-bg);
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
 
-  footer {
-    margin-top: 4rem; padding: 1.5rem 0;
-    border-top: 1px solid var(--border);
-    color: var(--fg-dim); font-size: 0.85rem;
-    text-align: center;
-  }
+/* ── install box ── */
+.install-box {
+  display: flex; align-items: stretch;
+  max-width: 660px; margin: 0 auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border-hi);
+  border-radius: 10px;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 0 0 1px rgba(156,142,207,0.04), 0 8px 32px rgba(0,0,0,0.35);
+  text-align: left;
+}
+.install-box code {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  padding: 0.9rem 1.1rem;
+  overflow-x: auto; white-space: nowrap;
+  color: var(--purple-lt);
+}
+.copy-btn {
+  background: transparent;
+  border: none; border-left: 1px solid var(--border);
+  color: var(--fg-dim);
+  padding: 0 1rem;
+  cursor: pointer; font: inherit; font-size: 0.82rem;
+  white-space: nowrap; flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+.copy-btn:hover  { color: var(--purple-lt); background: rgba(156,142,207,0.06); }
+.copy-btn.copied { color: #86efac; }
 
-  @media (max-width: 600px) {
-    .container { padding: 1rem 0.9rem 2rem; }
-    .hero { padding: 2rem 0 1.5rem; }
-    .install-box code { font-size: 0.78rem; }
-    table { font-size: 0.82rem; }
-    th, td { padding: 0.4rem 0.5rem; }
-  }
+/* ── section headings ── */
+.section { margin-top: 3.5rem; }
+.section-label {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--purple);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.5rem;
+}
+.section h2 {
+  font-family: var(--mono);
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── command list ── */
+.cmd-list {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.cmd-row {
+  display: grid;
+  grid-template-columns: minmax(0,1.6fr) minmax(0,1fr) minmax(0,1.6fr);
+  gap: 0 1rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid rgba(156,142,207,0.06);
+  align-items: baseline;
+  transition: background 0.12s;
+}
+.cmd-row:last-child { border-bottom: none; }
+.cmd-row:hover { background: rgba(156,142,207,0.05); }
+.cmd-row.header {
+  color: var(--fg-muted);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding-top: 0.65rem; padding-bottom: 0.65rem;
+  background: rgba(156,142,207,0.04);
+}
+.cmd-mao   { color: var(--purple-lt); }
+.cmd-paru  { color: var(--fg-dim); }
+.cmd-desc  { color: var(--fg-dim); }
+.cmd-mao .p  { color: var(--fg-muted); }
+
+/* ── tray feature cards ── */
+.tray-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.tray-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.1rem 1.2rem;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.tray-card:hover {
+  border-color: var(--border-hi);
+  box-shadow: 0 0 16px var(--glow);
+}
+.tray-card-icon { font-size: 1.4rem; margin-bottom: 0.5rem; }
+.tray-card h3 {
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--fg);
+  margin-bottom: 0.35rem;
+}
+.tray-card p { font-size: 0.86rem; color: var(--fg-dim); }
+
+/* ── prose + code blocks ── */
+p { margin: 0.75rem 0; font-size: 0.95rem; color: var(--fg-dim); }
+p strong { color: var(--fg); }
+p a { color: var(--purple-lt); }
+ul { margin: 0.75rem 0 0.75rem 1.2rem; }
+li { font-size: 0.92rem; color: var(--fg-dim); margin-bottom: 0.3rem; }
+li code, p code {
+  font-family: var(--mono);
+  font-size: 0.84em;
+  background: var(--code-bg);
+  padding: 0.12em 0.4em;
+  border-radius: 4px;
+  color: var(--purple-lt);
+}
+pre {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  padding: 1rem 1.1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+  color: var(--fg-dim);
+}
+pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+
+/* ── footer ── */
+footer {
+  margin-top: 5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  color: var(--fg-muted);
+  font-size: 0.82rem;
+  text-align: center;
+  display: flex; flex-wrap: wrap;
+  justify-content: center; gap: 0.4rem 1rem;
+}
+footer a { color: var(--fg-dim); }
+footer a:hover { color: var(--fg); text-decoration: none; }
+
+/* ── responsive ── */
+@media (max-width: 600px) {
+  .wrap { padding: 1rem 0.9rem 3rem; }
+  .hero { padding: 2.5rem 0 2rem; }
+  .cmd-row { grid-template-columns: 1fr 1fr; }
+  .cmd-paru { display: none; }
+  .cmd-row.header .c-paru { display: none; }
+}
 </style>
 </head>
 <body>
-<div class="container">
 
-  <header>
-    <div class="brand"><span class="cat">🐱</span>mao</div>
-    <nav>
+<canvas id="bg" aria-hidden="true"></canvas>
+
+<div class="wrap">
+
+  <nav>
+    <div class="brand">🐱 mao</div>
+    <div class="nav-links">
       <a href="#commands">commands</a>
+      <a href="#tray">tray</a>
       <a href="#install">install</a>
       <a href="https://github.com/casparjones/mao">github</a>
-      <button class="theme-toggle" id="themeToggle" aria-label="toggle theme">🌙 dark</button>
-    </nav>
-  </header>
+      <button class="theme-btn" id="themeBtn" aria-label="toggle theme">🌙</button>
+    </div>
+  </nav>
 
+  <!-- hero -->
   <section class="hero">
-    <h1>🐱 mao</h1>
+    <pre class="cat-art" id="catArt" aria-label="mao cat mascot">   /\_/\
+  ( ^.^ )
+   &gt; ~ &lt;</pre>
+
+    <h1 class="hero-title">
+      mao
+      <span class="version-badge">v0.1.3</span>
+    </h1>
     <p class="tagline"><code>paru</code>, but friendlier.</p>
 
-    <div class="install-box" id="installBox">
+    <div class="install-box">
       <code id="installCmd">curl -sSL https://casparjones.github.io/mao/install.sh | sh</code>
       <button class="copy-btn" id="copyBtn" aria-label="copy install command">copy</button>
     </div>
   </section>
 
-  <h2>Why?</h2>
-  <p>
-    <code>paru</code> is great, but its <code>pacman</code>-style flags are hard to
-    discover and easy to forget. <strong>mao</strong> wraps paru with readable
-    sub-commands — <code>mao install firefox</code>, <code>mao update</code>,
-    <code>mao search wine</code> — while still passing any paru flag through
-    unchanged. Your muscle memory keeps working.
-  </p>
+  <!-- why -->
+  <section class="section" id="why">
+    <div class="section-label">// the idea</div>
+    <h2>Why?</h2>
+    <p>
+      <code>paru</code> is great, but its pacman-style flags are hard to discover
+      and easy to forget. <strong>mao</strong> gives them names:
+      <code>mao install firefox</code>, <code>mao update</code>, <code>mao search wine</code>.
+      Unknown flags still pass through to paru unchanged — your muscle memory keeps working.
+    </p>
+  </section>
 
-  <h2 id="commands">Commands</h2>
-  <div class="table-wrap">
-  <table>
-    <thead>
-      <tr><th>mao</th><th>paru</th><th>description</th></tr>
-    </thead>
-    <tbody>
-      <tr><td><code>mao update</code></td><td><code>paru -Syu</code></td><td>update system + AUR</td></tr>
-      <tr><td><code>mao update-db</code></td><td><code>paru -Syy</code></td><td>refresh package database</td></tr>
-      <tr><td><code>mao install &lt;pkg&gt;</code></td><td><code>paru -S &lt;pkg&gt;</code></td><td>install package(s)</td></tr>
-      <tr><td><code>mao remove &lt;pkg&gt;</code></td><td><code>paru -Rns &lt;pkg&gt;</code></td><td>remove pkg + deps + configs</td></tr>
-      <tr><td><code>mao search &lt;q&gt;</code></td><td><code>paru -Ss &lt;q&gt;</code></td><td>search repos and AUR</td></tr>
-      <tr><td><code>mao info &lt;pkg&gt;</code></td><td><code>paru -Si &lt;pkg&gt;</code></td><td>package details</td></tr>
-      <tr><td><code>mao list</code></td><td><code>paru -Qe</code></td><td>explicitly installed packages</td></tr>
-      <tr><td><code>mao list-all</code></td><td><code>paru -Q</code></td><td>all installed packages</td></tr>
-      <tr><td><code>mao owns &lt;file&gt;</code></td><td><code>paru -Qo &lt;file&gt;</code></td><td>which package owns a file</td></tr>
-      <tr><td><code>mao files &lt;pkg&gt;</code></td><td><code>paru -Ql &lt;pkg&gt;</code></td><td>files belonging to a package</td></tr>
-      <tr><td><code>mao orphans</code></td><td><code>paru -Qtdq</code></td><td>list orphaned packages</td></tr>
-      <tr><td><code>mao clean</code></td><td><code>paru -Sc</code></td><td>clean package cache</td></tr>
-      <tr><td><code>mao clean-all</code></td><td><code>paru -Scc</code></td><td>empty package cache</td></tr>
-      <tr><td><code>mao autoremove</code></td><td><code>paru -Rns $(paru -Qtdq)</code></td><td>remove orphans (shows preview)</td></tr>
-      <tr><td><code>mao outdated</code></td><td><code>paru -Qu</code></td><td>show available updates</td></tr>
-      <tr><td><code>mao -Syu</code></td><td><code>paru -Syu</code></td><td>any paru flag is passed through 1:1</td></tr>
-    </tbody>
-  </table>
-  </div>
+  <!-- commands -->
+  <section class="section" id="commands">
+    <div class="section-label">// reference</div>
+    <h2>Commands</h2>
 
-  <h2 id="install">Install</h2>
-  <p>One-liner:</p>
-  <pre><code>curl -sSL https://casparjones.github.io/mao/install.sh | sh</code></pre>
-  <p>The installer will:</p>
-  <ul>
-    <li>check you're on an Arch-based system</li>
-    <li>offer to install <code>paru</code> if it's missing</li>
-    <li>place <code>mao</code> in <code>~/.local/bin</code> (or <code>/usr/local/bin</code> as root)</li>
-    <li>optionally install shell completions (fish / bash / zsh)</li>
-  </ul>
-  <p>Prefer reading the script first? <a href="install.sh">view install.sh</a>.</p>
+    <div class="cmd-list" role="table" aria-label="mao command reference">
+      <div class="cmd-row header" role="row">
+        <span role="columnheader">mao</span>
+        <span class="c-paru" role="columnheader">paru</span>
+        <span role="columnheader">does</span>
+      </div>
+      <div class="cmd-row" role="row">
+        <span class="cmd-mao"><span class="p">$ </span>mao update</span>
+        <span class="cmd-paru">paru -Syu</span>
+        <span class="cmd-desc">update system + AUR</span>
+      </div>
+      <div class="cmd-row" role="row">
+        <span class="cmd-mao"><span class="p">$ </span>mao update-db</span>
+        <span class="cmd-paru">paru -Syy</span>
+        <span class="cmd-desc">refresh package database</span>
+      </div>
+      <div class="cmd-row" role="row">
+        <span class="cmd-mao"><span class="p">$ </span>mao install &lt;pkg&gt;</span>
+        <span class="cmd-paru">paru -S</span>
+        <span class="cmd-desc">install package(s)</span>
+      </div>
+      <div class="cmd-row" role="row">
+        <span class="cmd-mao"><span class="p">$ </span>mao remove &lt;pkg&gt;</span>
+        <span class="cmd-paru">paru -Rns</span>
+        <span class="cmd-desc">remove pkg + deps + configs</span>
+      </div>
+      <div class="cmd-row" role="row">
+        <span class="cmd-mao"><span class="p">$ </span>mao search &lt;q&gt;</span>
+        <span class="cmd-paru">paru -Ss</span>
+        <span class="cmd-desc">search repos and AUR</span>
+      </div>
+      <div class="cmd-row" role="row">
+        <span class="cmd-mao"><span class="p">$ </span>mao info &lt;pkg&gt;</span>
+        <span class="cmd-paru">paru -Si</span>
+        <span class="cmd-desc">package details</span>
+      </div>
+      <div class="cmd-row" role="row">
+        <span class="cmd-mao"><span class="p">$ </span>mao list</span>
+        <span class="cmd-paru">paru -Qe</span>
+        <span class="cmd-desc">explicitly installed packages</span>
+      </div>
+      <div class="cmd-row" role="row">
+        <span class="cmd-mao"><span class="p">$ </span>mao list-all</span>
+        <span class="cmd-paru">paru -Q</span>
+        <span class="cmd-desc">all installed packages</span>
+      </div>
+      <div class="cmd-row" role="row">
+        <span class="cmd-mao"><span class="p">$ </span>mao orphans</span>
+        <span class="cmd-paru">paru -Qtdq</span>
+        <span class="cmd-desc">list orphaned packages</span>
+      </div>
+      <div class="cmd-row" role="row">
+        <span class="cmd-mao"><span class="p">$ </span>mao autoremove</span>
+        <span class="cmd-paru">paru -Rns …</span>
+        <span class="cmd-desc">remove orphans (with preview)</span>
+      </div>
+      <div class="cmd-row" role="row">
+        <span class="cmd-mao"><span class="p">$ </span>mao outdated</span>
+        <span class="cmd-paru">paru -Qu</span>
+        <span class="cmd-desc">show available updates</span>
+      </div>
+      <div class="cmd-row" role="row">
+        <span class="cmd-mao"><span class="p">$ </span>mao clean</span>
+        <span class="cmd-paru">paru -Sc</span>
+        <span class="cmd-desc">clean package cache</span>
+      </div>
+      <div class="cmd-row" role="row">
+        <span class="cmd-mao"><span class="p">$ </span>mao owns &lt;file&gt;</span>
+        <span class="cmd-paru">paru -Qo</span>
+        <span class="cmd-desc">which package owns a file</span>
+      </div>
+      <div class="cmd-row" role="row">
+        <span class="cmd-mao"><span class="p">$ </span>mao uninstall</span>
+        <span class="cmd-paru">—</span>
+        <span class="cmd-desc">remove mao + mao-tray</span>
+      </div>
+      <div class="cmd-row" role="row">
+        <span class="cmd-mao"><span class="p">$ </span>mao -Syu</span>
+        <span class="cmd-paru">paru -Syu</span>
+        <span class="cmd-desc">any paru flag passes through 1:1</span>
+      </div>
+    </div>
+  </section>
 
-  <h3>Manual install</h3>
-  <pre><code>curl -fsSLo ~/.local/bin/mao https://raw.githubusercontent.com/casparjones/mao/main/mao
+  <!-- mao-tray -->
+  <section class="section" id="tray">
+    <div class="section-label">// optional</div>
+    <h2>mao-tray</h2>
+    <p>
+      A system tray companion that watches for updates in the background.
+      Installed optionally — the installer will ask.
+    </p>
+
+    <div class="tray-grid">
+      <div class="tray-card">
+        <div class="tray-card-icon">🕐</div>
+        <h3>Hourly checks</h3>
+        <p>Polls <code>paru -Qu</code> every hour and shows a desktop notification when updates are ready.</p>
+      </div>
+      <div class="tray-card">
+        <div class="tray-card-icon">🔇</div>
+        <h3>Silent updates</h3>
+        <p>Runs <code>paru -Syu --noconfirm</code> in the background. Everything is logged to <code>~/.local/share/mao/tray.log</code>.</p>
+      </div>
+      <div class="tray-card">
+        <div class="tray-card-icon">⚙️</div>
+        <h3>Auto-update toggle</h3>
+        <p>Switch between notify-only and fully automatic mode from the tray context menu.</p>
+      </div>
+      <div class="tray-card">
+        <div class="tray-card-icon">⏻</div>
+        <h3>Update + Shutdown</h3>
+        <p>One click to update silently and power off — useful before stepping away from the machine.</p>
+      </div>
+    </div>
+
+    <p style="margin-top:1rem;">
+      Requires <code>python-pyqt6</code>. Start manually with <code>mao-tray &amp;</code>,
+      or let the installer add an XDG autostart entry.
+    </p>
+  </section>
+
+  <!-- install -->
+  <section class="section" id="install">
+    <div class="section-label">// getting started</div>
+    <h2>Install</h2>
+    <p>One-liner for Arch-based systems:</p>
+    <pre><code>curl -sSL https://casparjones.github.io/mao/install.sh | sh</code></pre>
+    <p>The installer will:</p>
+    <ul>
+      <li>check you're on an Arch-based system</li>
+      <li>offer to install <code>paru</code> if it's missing</li>
+      <li>place <code>mao</code> in <code>~/.local/bin</code> (or <code>/usr/local/bin</code> as root)</li>
+      <li>optionally install shell completions (fish / bash / zsh)</li>
+      <li>optionally set up <strong>mao-tray</strong> with autostart and sudoers</li>
+    </ul>
+    <p>Prefer reading first? <a href="install.sh">view install.sh</a></p>
+
+    <h3 style="font-family:var(--mono);font-size:1rem;font-weight:600;margin:1.5rem 0 0.5rem;color:var(--fg);">Manual install</h3>
+    <pre><code>curl -fsSLo ~/.local/bin/mao https://raw.githubusercontent.com/casparjones/mao/main/mao
 chmod +x ~/.local/bin/mao</code></pre>
 
-  <h2>Why "mao"?</h2>
-  <p>
-    <em>Mao</em> (猫) is the sound a cat makes in Chinese — a nod to Maomao from
-    <em>Kusuriya no Hitorigoto</em> (The Apothecary Diaries). Like her: small,
-    precise, and gets the job done quietly. 🐱
-  </p>
+    <h3 style="font-family:var(--mono);font-size:1rem;font-weight:600;margin:1.5rem 0 0.5rem;color:var(--fg);">Uninstall</h3>
+    <pre><code>mao uninstall
+# or without mao:
+curl -sSL https://casparjones.github.io/mao/uninstall.sh | sh</code></pre>
+  </section>
+
+  <!-- why the name -->
+  <section class="section">
+    <div class="section-label">// etymology</div>
+    <h2>Why "mao"?</h2>
+    <p>
+      <em>Mao</em> (猫) is the sound a cat makes in Chinese — a nod to Maomao from
+      <em>Kusuriya no Hitorigoto</em>. Like her: small, precise, gets the job done quietly.
+    </p>
+  </section>
 
   <footer>
-    MIT &middot; <a href="https://github.com/casparjones/mao">source on github</a> &middot; no tracking, no external fonts
+    <span>MIT license</span>
+    <a href="https://github.com/casparjones/mao">source on github</a>
+    <a href="install.sh">install.sh</a>
+    <a href="uninstall.sh">uninstall.sh</a>
+    <span>no tracking · no external fonts</span>
   </footer>
 
-</div>
+</div><!-- /wrap -->
 
 <script>
-(function() {
+(function () {
+  'use strict';
+
+  /* ── theme toggle ── */
   var root = document.documentElement;
-  var toggle = document.getElementById('themeToggle');
+  var btn  = document.getElementById('themeBtn');
   var stored = localStorage.getItem('mao-theme');
   if (stored) root.setAttribute('data-theme', stored);
-
-  function render() {
-    var dark = root.getAttribute('data-theme') !== 'light';
-    toggle.textContent = dark ? '🌙 dark' : '☀️ light';
+  function renderTheme() {
+    btn.textContent = root.getAttribute('data-theme') === 'light' ? '☀️' : '🌙';
   }
-  render();
-
-  toggle.addEventListener('click', function() {
+  renderTheme();
+  btn.addEventListener('click', function () {
     var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
     root.setAttribute('data-theme', next);
     localStorage.setItem('mao-theme', next);
-    render();
+    renderTheme();
   });
 
+  /* ── copy button ── */
   var copyBtn = document.getElementById('copyBtn');
-  var cmd = document.getElementById('installCmd');
-  copyBtn.addEventListener('click', function() {
-    var text = cmd.textContent;
-    var done = function() {
-      copyBtn.textContent = 'copied';
+  var cmdEl   = document.getElementById('installCmd');
+  copyBtn.addEventListener('click', function () {
+    var text = cmdEl.textContent;
+    function done() {
+      copyBtn.textContent = 'copied!';
       copyBtn.classList.add('copied');
-      setTimeout(function() {
+      setTimeout(function () {
         copyBtn.textContent = 'copy';
         copyBtn.classList.remove('copied');
-      }, 1500);
-    };
+      }, 1800);
+    }
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(done, done);
     } else {
       var ta = document.createElement('textarea');
-      ta.value = text;
-      ta.setAttribute('readonly', '');
-      ta.style.position = 'absolute';
-      ta.style.left = '-9999px';
-      document.body.appendChild(ta);
-      ta.select();
+      ta.value = text; ta.style.position = 'absolute'; ta.style.left = '-9999px';
+      document.body.appendChild(ta); ta.select();
       try { document.execCommand('copy'); } catch (e) {}
-      document.body.removeChild(ta);
-      done();
+      document.body.removeChild(ta); done();
     }
   });
+
+  /* ── cat eye blink ── */
+  var catEl = document.getElementById('catArt');
+  var catOpen  = '   /\\_/\\\n  ( ^.^ )\n   > ~ <';
+  var catBlink = '   /\\_/\\\n  ( -.-)  \n   > ~ <';
+  function blink() {
+    catEl.textContent = catBlink;
+    setTimeout(function () { catEl.textContent = catOpen; }, 150);
+    setTimeout(blink, 3000 + Math.random() * 4000);
+  }
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    setTimeout(blink, 2000);
+  }
+
+  /* ── particle background ── */
+  var canvas = document.getElementById('bg');
+  var ctx    = canvas.getContext('2d');
+  var particles = [];
+  var paused = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var raf;
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  /* paw-print: 1 main pad + 4 toe beans */
+  function drawPaw(x, y, s, alpha, color) {
+    ctx.fillStyle = 'rgba(' + color + ',' + alpha + ')';
+    ctx.beginPath(); ctx.arc(x, y, s, 0, 6.2832); ctx.fill();
+    var toes = [[-s*1.3,-s*1.7],[-s*0.4,-s*2.2],[s*0.45,-s*2.2],[s*1.3,-s*1.7]];
+    for (var i = 0; i < toes.length; i++) {
+      ctx.beginPath(); ctx.arc(x + toes[i][0], y + toes[i][1], s * 0.62, 0, 6.2832); ctx.fill();
+    }
+  }
+
+  function makeParticle() {
+    var isPaw = Math.random() < 0.25;
+    var hue   = 250 + Math.random() * 50;        /* 250–300: blue-violet to purple */
+    var sat   = 45 + Math.random() * 30;
+    var lit   = 60 + Math.random() * 25;
+    /* convert hsl to rgb for rgba string — simplified approximation */
+    var rgb   = hslToRgb(hue / 360, sat / 100, lit / 100);
+    return {
+      x:       Math.random() * canvas.width,
+      y:       canvas.height + 20,
+      vx:      (Math.random() - 0.5) * 0.3,
+      vy:      -(0.15 + Math.random() * 0.35),
+      r:       (isPaw ? 1.8 : 1) + Math.random() * 1.6,
+      opacity: 0.06 + Math.random() * 0.18,
+      rgb:     rgb,
+      isPaw:   isPaw,
+      life:    0,
+      maxLife: 280 + Math.random() * 420,
+    };
+  }
+
+  function hslToRgb(h, s, l) {
+    var r, g, b;
+    if (s === 0) { r = g = b = l; }
+    else {
+      var hue2rgb = function (p, q, t) {
+        if (t < 0) t += 1; if (t > 1) t -= 1;
+        if (t < 1/6) return p + (q - p) * 6 * t;
+        if (t < 1/2) return q;
+        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        return p;
+      };
+      var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      var p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1/3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1/3);
+    }
+    return Math.round(r*255) + ',' + Math.round(g*255) + ',' + Math.round(b*255);
+  }
+
+  /* seed initial particles spread across viewport */
+  for (var i = 0; i < 60; i++) {
+    var p = makeParticle();
+    p.y = Math.random() * canvas.height;
+    p.life = Math.random() * p.maxLife;
+    particles.push(p);
+  }
+
+  function frame() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    /* subtle radial glow behind hero */
+    var grad = ctx.createRadialGradient(
+      canvas.width / 2, canvas.height * 0.28, 0,
+      canvas.width / 2, canvas.height * 0.28, Math.min(canvas.width, canvas.height) * 0.55
+    );
+    grad.addColorStop(0,   'rgba(100,80,180,0.07)');
+    grad.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      p.x += p.vx; p.y += p.vy; p.life++;
+
+      var progress = p.life / p.maxLife;
+      var alpha    = p.opacity * Math.sin(Math.PI * progress);
+
+      if (p.isPaw) {
+        drawPaw(p.x, p.y, p.r, alpha.toFixed(3), p.rgb);
+      } else {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, 6.2832);
+        ctx.fillStyle = 'rgba(' + p.rgb + ',' + alpha.toFixed(3) + ')';
+        ctx.fill();
+      }
+
+      if (p.life >= p.maxLife || p.y < -20) {
+        particles[i] = makeParticle();
+      }
+    }
+
+    raf = requestAnimationFrame(frame);
+  }
+
+  if (!paused) frame();
 })();
 </script>
+
 </body>
 </html>
