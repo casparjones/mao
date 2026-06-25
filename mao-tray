@@ -15,6 +15,7 @@ For unattended silent updates, allow pacman without a password:
 import json
 import logging
 import os
+import shutil
 import subprocess
 import sys
 from datetime import datetime
@@ -75,6 +76,13 @@ def _save_conf(conf: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Garuda detection
+# ---------------------------------------------------------------------------
+def _is_garuda() -> bool:
+    return shutil.which("garuda-update") is not None
+
+
+# ---------------------------------------------------------------------------
 # Worker threads
 # ---------------------------------------------------------------------------
 class CheckThread(QThread):
@@ -101,31 +109,45 @@ class UpdateThread(QThread):
         super().__init__()
         self.shutdown_after = shutdown_after
 
-    def run(self) -> None:
-        log.info("silent update started (shutdown_after=%s)", self.shutdown_after)
+    def _run_cmd(self, cmd: list[str]) -> bool:
+        """Run a command, stream output to log. Returns True on success."""
+        log.info("running: %s", " ".join(cmd))
         try:
             r = subprocess.run(
-                ["paru", "-Syu", "--noconfirm", "--noprogressbar"],
+                cmd,
                 capture_output=True, text=True, timeout=600,
                 env={**os.environ, "TERM": "dumb"},
             )
             for line in (r.stdout + r.stderr).splitlines():
                 if line.strip():
-                    log.info("  paru: %s", line)
-
-            if r.returncode == 0:
-                log.info("silent update finished successfully")
-                if self.shutdown_after:
-                    log.info("shutting down as requested")
-                    subprocess.run(["systemctl", "poweroff"], check=False)
-                self.done.emit(True, "Update completed successfully")
-            else:
-                msg = f"paru exited with code {r.returncode}"
-                log.error("silent update failed: %s", msg)
-                self.done.emit(False, msg)
+                    log.info("  %s: %s", cmd[0], line)
+            if r.returncode != 0:
+                log.error("%s exited with code %d", cmd[0], r.returncode)
+            return r.returncode == 0
         except subprocess.TimeoutExpired:
-            log.error("silent update timed out after 600 s")
-            self.done.emit(False, "Update timed out")
+            log.error("%s timed out", cmd[0])
+            return False
+
+    def run(self) -> None:
+        garuda = _is_garuda()
+        log.info("silent update started (garuda=%s, shutdown_after=%s)", garuda, self.shutdown_after)
+        try:
+            # On Garuda: run garuda-update first (handles system + Garuda-specific pkgs),
+            # then paru -Syu for any remaining AUR packages — mirrors `mao update` behaviour.
+            if garuda:
+                if not self._run_cmd(["garuda-update", "--noconfirm"]):
+                    self.done.emit(False, "garuda-update failed")
+                    return
+
+            if not self._run_cmd(["paru", "-Syu", "--noconfirm", "--noprogressbar"]):
+                self.done.emit(False, "paru exited with an error")
+                return
+
+            log.info("silent update finished successfully")
+            if self.shutdown_after:
+                log.info("shutting down as requested")
+                subprocess.run(["systemctl", "poweroff"], check=False)
+            self.done.emit(True, "Update completed successfully")
         except Exception as exc:
             log.error("silent update error: %s", exc)
             self.done.emit(False, str(exc))

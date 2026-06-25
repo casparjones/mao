@@ -98,7 +98,8 @@ ${C_BOLD}COMMANDS${C_RESET}
   ${C_GREEN}outdated${C_RESET}            Show available updates       ${C_DIM}(paru -Qu)${C_RESET}
   ${C_GREEN}help${C_RESET}                Show this help
   ${C_GREEN}version${C_RESET}             Show mao & paru version
-  ${C_GREEN}uninstall${C_RESET}           Remove mao, mao-tray & completions
+  ${C_GREEN}system update${C_RESET}       Update mao itself to the latest version
+  ${C_GREEN}system uninstall${C_RESET}    Remove mao, mao-tray & completions
 
 ${C_BOLD}PASSTHROUGH${C_RESET}
   Anything that isn't a known subcommand is forwarded to paru 1:1:
@@ -145,7 +146,40 @@ cmd_update() {
     exec paru -Syu "$@"
 }
 
-cmd_uninstall() {
+cmd_system() {
+    local sub="${1:-}"
+    shift 2>/dev/null || true
+    case "$sub" in
+        update)    cmd_system_update "$@" ;;
+        uninstall) cmd_system_uninstall "$@" ;;
+        *)
+            printf '%smao system%s — manage the mao installation itself\n\n' "${C_BOLD}" "${C_RESET}"
+            printf '  %smao system update%s      update mao to the latest version\n' "${C_GREEN}" "${C_RESET}"
+            printf '  %smao system uninstall%s   remove mao, mao-tray & completions\n' "${C_GREEN}" "${C_RESET}"
+            ;;
+    esac
+}
+
+cmd_system_update() {
+    if ! command -v curl >/dev/null 2>&1; then
+        die "curl is required. Install it with: sudo pacman -S curl"
+    fi
+    local current_path
+    current_path="$(command -v mao 2>/dev/null)" || die "cannot locate the mao binary"
+    info "downloading latest mao from ${MAO_REPO_RAW}/mao…"
+    local tmp
+    tmp="$(mktemp /tmp/mao-update.XXXXXX)"
+    trap 'rm -f "$tmp"' EXIT
+    if ! curl -fsSL "${MAO_REPO_RAW}/mao" -o "$tmp"; then
+        die "failed to download latest mao"
+    fi
+    chmod +x "$tmp"
+    mv "$tmp" "$current_path"
+    info "mao updated:"
+    "$current_path" version
+}
+
+cmd_system_uninstall() {
     if ! command -v curl >/dev/null 2>&1; then
         die "curl is required for uninstall. Run manually:\n  curl -sSL ${MAO_HOMEPAGE}uninstall.sh | sh"
     fi
@@ -206,7 +240,7 @@ main() {
     case "$cmd" in
         help|--help|-h)        print_help ;;
         version|--version|-v)  print_version ;;
-        uninstall)             cmd_uninstall "$@" ;;
+        system)                cmd_system "$@" ;;
 
         # Explicit passthrough separator: `mao -- <anything>` → paru <anything>
         --)                    require_paru

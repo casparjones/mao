@@ -98,17 +98,27 @@ nav {
   text-align: center;
   padding: 3.5rem 0 3rem;
 }
+.cat-wrap {
+  display: inline-block;
+  overflow: hidden;
+  margin-bottom: 1.75rem;
+}
 .cat-art {
   font-family: var(--mono);
   font-size: clamp(1rem, 4vw, 1.5rem);
   line-height: 1.35;
   color: var(--purple-lt);
-  display: inline-block;
-  margin-bottom: 1.75rem;
+  display: block;
   text-shadow: 0 0 28px rgba(156,142,207,0.45), 0 0 60px rgba(156,142,207,0.18);
   animation: cat-pulse 4s ease-in-out infinite;
   white-space: pre;
   user-select: none;
+}
+.eye {
+  display: inline-block;
+  width: 1ch;
+  text-align: center;
+  transition: opacity 0.18s ease;
 }
 @keyframes cat-pulse {
   0%,100% { text-shadow: 0 0 28px rgba(156,142,207,0.45), 0 0 60px rgba(156,142,207,0.18); }
@@ -124,21 +134,20 @@ nav {
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1;
-  margin-bottom: 0.6rem;
-  display: flex; align-items: baseline;
-  justify-content: center; gap: 0.5rem; flex-wrap: wrap;
+  margin-bottom: 0.45rem;
 }
 .version-badge {
+  display: inline-block;
   font-family: var(--mono);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 500;
   background: rgba(156,142,207,0.12);
   border: 1px solid var(--border-hi);
   color: var(--purple-lt);
   padding: 0.2em 0.75em;
   border-radius: 20px;
-  vertical-align: middle;
   letter-spacing: 0;
+  margin-bottom: 1.6rem;
   animation: badge-in 0.6s ease both 0.4s;
 }
 @keyframes badge-in {
@@ -250,9 +259,12 @@ nav {
 /* ── tray feature cards ── */
 .tray-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
   margin-top: 1rem;
+}
+@media (max-width: 480px) {
+  .tray-grid { grid-template-columns: 1fr; }
 }
 .tray-card {
   background: var(--bg-card);
@@ -347,14 +359,14 @@ footer a:hover { color: var(--fg); text-decoration: none; }
 
   <!-- hero -->
   <section class="hero">
-    <pre class="cat-art" id="catArt" aria-label="mao cat mascot">   /\_/\
-  ( ^.^ )
+    <div class="cat-wrap">
+      <pre class="cat-art" aria-label="mao cat mascot">   /\_/\
+  ( <span class="eye" id="eye-l">^</span>.<span class="eye" id="eye-r">^</span> )
    &gt; ~ &lt;</pre>
+    </div>
 
-    <h1 class="hero-title">
-      mao
-      <span class="version-badge">v0.1.3</span>
-    </h1>
+    <h1 class="hero-title">mao</h1>
+    <div class="version-badge">v0.1.3</div>
     <p class="tagline"><code>paru</code>, but friendlier.</p>
 
     <div class="install-box">
@@ -452,11 +464,6 @@ footer a:hover { color: var(--fg); text-decoration: none; }
         <span class="cmd-desc">which package owns a file</span>
       </div>
       <div class="cmd-row" role="row">
-        <span class="cmd-mao"><span class="p">$ </span>mao uninstall</span>
-        <span class="cmd-paru">—</span>
-        <span class="cmd-desc">remove mao + mao-tray</span>
-      </div>
-      <div class="cmd-row" role="row">
         <span class="cmd-mao"><span class="p">$ </span>mao -Syu</span>
         <span class="cmd-paru">paru -Syu</span>
         <span class="cmd-desc">any paru flag passes through 1:1</span>
@@ -522,10 +529,6 @@ footer a:hover { color: var(--fg); text-decoration: none; }
     <pre><code>curl -fsSLo ~/.local/bin/mao https://raw.githubusercontent.com/casparjones/mao/main/mao
 chmod +x ~/.local/bin/mao</code></pre>
 
-    <h3 style="font-family:var(--mono);font-size:1rem;font-weight:600;margin:1.5rem 0 0.5rem;color:var(--fg);">Uninstall</h3>
-    <pre><code>mao uninstall
-# or without mao:
-curl -sSL https://casparjones.github.io/mao/uninstall.sh | sh</code></pre>
   </section>
 
   <!-- why the name -->
@@ -536,6 +539,42 @@ curl -sSL https://casparjones.github.io/mao/uninstall.sh | sh</code></pre>
       <em>Mao</em> (猫) is the sound a cat makes in Chinese — a nod to Maomao from
       <em>Kusuriya no Hitorigoto</em>. Like her: small, precise, gets the job done quietly.
     </p>
+  </section>
+
+  <!-- managing mao itself -->
+  <section class="section" id="system">
+    <div class="section-label">// managing mao itself</div>
+    <h2>mao system</h2>
+    <p>
+      These commands manage the mao installation itself — not paru or packages.
+    </p>
+
+    <div class="cmd-list" role="table" aria-label="mao system commands" style="margin-top:0.75rem;">
+      <div class="cmd-row header" role="row">
+        <span role="columnheader">command</span>
+        <span class="c-paru" role="columnheader"></span>
+        <span role="columnheader">does</span>
+      </div>
+      <div class="cmd-row" role="row">
+        <span class="cmd-mao"><span class="p">$ </span>mao system update</span>
+        <span class="cmd-paru"></span>
+        <span class="cmd-desc">update mao itself to the latest version</span>
+      </div>
+      <div class="cmd-row" role="row">
+        <span class="cmd-mao"><span class="p">$ </span>mao system uninstall</span>
+        <span class="cmd-paru"></span>
+        <span class="cmd-desc">remove mao, mao-tray &amp; completions</span>
+      </div>
+    </div>
+
+    <h3 style="font-family:var(--mono);font-size:1rem;font-weight:600;margin:1.5rem 0 0.5rem;color:var(--fg);">Update mao</h3>
+    <pre><code>mao system update</code></pre>
+    <p>Downloads the latest version of <code>mao</code> from GitHub and replaces the current binary in-place. Requires <code>curl</code>.</p>
+
+    <h3 style="font-family:var(--mono);font-size:1rem;font-weight:600;margin:1.5rem 0 0.5rem;color:var(--fg);">Uninstall</h3>
+    <pre><code>mao system uninstall
+# or without mao installed:
+curl -sSL https://casparjones.github.io/mao/uninstall.sh | sh</code></pre>
   </section>
 
   <footer>
@@ -552,17 +591,18 @@ curl -sSL https://casparjones.github.io/mao/uninstall.sh | sh</code></pre>
 (function () {
   'use strict';
 
-  /* ── theme toggle ── */
-  var root = document.documentElement;
-  var btn  = document.getElementById('themeBtn');
+  var root   = document.documentElement;
+  var btn    = document.getElementById('themeBtn');
   var stored = localStorage.getItem('mao-theme');
   if (stored) root.setAttribute('data-theme', stored);
-  function renderTheme() {
-    btn.textContent = root.getAttribute('data-theme') === 'light' ? '☀️' : '🌙';
-  }
+
+  function isDark() { return root.getAttribute('data-theme') !== 'light'; }
+
+  function renderTheme() { btn.textContent = isDark() ? '🌙' : '☀️'; }
   renderTheme();
+
   btn.addEventListener('click', function () {
-    var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    var next = isDark() ? 'light' : 'dark';
     root.setAttribute('data-theme', next);
     localStorage.setItem('mao-theme', next);
     renderTheme();
@@ -576,10 +616,7 @@ curl -sSL https://casparjones.github.io/mao/uninstall.sh | sh</code></pre>
     function done() {
       copyBtn.textContent = 'copied!';
       copyBtn.classList.add('copied');
-      setTimeout(function () {
-        copyBtn.textContent = 'copy';
-        copyBtn.classList.remove('copied');
-      }, 1800);
+      setTimeout(function () { copyBtn.textContent = 'copy'; copyBtn.classList.remove('copied'); }, 1800);
     }
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(done, done);
@@ -592,63 +629,36 @@ curl -sSL https://casparjones.github.io/mao/uninstall.sh | sh</code></pre>
     }
   });
 
-  /* ── cat eye blink ── */
-  var catEl = document.getElementById('catArt');
-  var catOpen  = '   /\\_/\\\n  ( ^.^ )\n   > ~ <';
-  var catBlink = '   /\\_/\\\n  ( -.-)  \n   > ~ <';
-  function blink() {
-    catEl.textContent = catBlink;
-    setTimeout(function () { catEl.textContent = catOpen; }, 150);
-    setTimeout(blink, 3000 + Math.random() * 4000);
+  /* ── cat eye wink (right eye only) ── */
+  var eyeR = document.getElementById('eye-r');
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function wink() {
+    eyeR.style.opacity = '0';                         /* fade out */
+    setTimeout(function () {
+      eyeR.textContent = '-';
+      eyeR.style.opacity = '1';                       /* fade in as closed */
+      setTimeout(function () {
+        eyeR.style.opacity = '0';                     /* hold 1.1 s, then fade out */
+        setTimeout(function () {
+          eyeR.textContent = '^';
+          eyeR.style.opacity = '1';                   /* fade back open */
+          setTimeout(wink, 4000 + Math.random() * 5000);
+        }, 180);
+      }, 1100);
+    }, 180);
   }
-  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    setTimeout(blink, 2000);
-  }
+
+  if (!reduced) setTimeout(wink, 2500);
 
   /* ── particle background ── */
   var canvas = document.getElementById('bg');
   var ctx    = canvas.getContext('2d');
   var particles = [];
-  var paused = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var raf;
 
-  function resize() {
-    canvas.width  = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
   resize();
   window.addEventListener('resize', resize);
-
-  /* paw-print: 1 main pad + 4 toe beans */
-  function drawPaw(x, y, s, alpha, color) {
-    ctx.fillStyle = 'rgba(' + color + ',' + alpha + ')';
-    ctx.beginPath(); ctx.arc(x, y, s, 0, 6.2832); ctx.fill();
-    var toes = [[-s*1.3,-s*1.7],[-s*0.4,-s*2.2],[s*0.45,-s*2.2],[s*1.3,-s*1.7]];
-    for (var i = 0; i < toes.length; i++) {
-      ctx.beginPath(); ctx.arc(x + toes[i][0], y + toes[i][1], s * 0.62, 0, 6.2832); ctx.fill();
-    }
-  }
-
-  function makeParticle() {
-    var isPaw = Math.random() < 0.25;
-    var hue   = 250 + Math.random() * 50;        /* 250–300: blue-violet to purple */
-    var sat   = 45 + Math.random() * 30;
-    var lit   = 60 + Math.random() * 25;
-    /* convert hsl to rgb for rgba string — simplified approximation */
-    var rgb   = hslToRgb(hue / 360, sat / 100, lit / 100);
-    return {
-      x:       Math.random() * canvas.width,
-      y:       canvas.height + 20,
-      vx:      (Math.random() - 0.5) * 0.3,
-      vy:      -(0.15 + Math.random() * 0.35),
-      r:       (isPaw ? 1.8 : 1) + Math.random() * 1.6,
-      opacity: 0.06 + Math.random() * 0.18,
-      rgb:     rgb,
-      isPaw:   isPaw,
-      life:    0,
-      maxLife: 280 + Math.random() * 420,
-    };
-  }
 
   function hslToRgb(h, s, l) {
     var r, g, b;
@@ -656,21 +666,50 @@ curl -sSL https://casparjones.github.io/mao/uninstall.sh | sh</code></pre>
     else {
       var hue2rgb = function (p, q, t) {
         if (t < 0) t += 1; if (t > 1) t -= 1;
-        if (t < 1/6) return p + (q - p) * 6 * t;
+        if (t < 1/6) return p + (q-p)*6*t;
         if (t < 1/2) return q;
-        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        if (t < 2/3) return p + (q-p)*(2/3-t)*6;
         return p;
       };
-      var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-      var p = 2 * l - q;
-      r = hue2rgb(p, q, h + 1/3);
-      g = hue2rgb(p, q, h);
-      b = hue2rgb(p, q, h - 1/3);
+      var q = l < 0.5 ? l*(1+s) : l+s-l*s, p = 2*l-q;
+      r = hue2rgb(p,q,h+1/3); g = hue2rgb(p,q,h); b = hue2rgb(p,q,h-1/3);
     }
-    return Math.round(r*255) + ',' + Math.round(g*255) + ',' + Math.round(b*255);
+    return Math.round(r*255)+','+Math.round(g*255)+','+Math.round(b*255);
   }
 
-  /* seed initial particles spread across viewport */
+  /* paw print: 1 main pad + 4 toe beans */
+  function drawPaw(x, y, s, alpha, rgb) {
+    ctx.fillStyle = 'rgba('+rgb+','+alpha+')';
+    ctx.beginPath(); ctx.arc(x, y, s, 0, 6.2832); ctx.fill();
+    var toes = [[-s*1.3,-s*1.7],[-s*0.4,-s*2.2],[s*0.45,-s*2.2],[s*1.3,-s*1.7]];
+    for (var i = 0; i < toes.length; i++) {
+      ctx.beginPath(); ctx.arc(x+toes[i][0], y+toes[i][1], s*0.62, 0, 6.2832); ctx.fill();
+    }
+  }
+
+  function makeParticle() {
+    var dark   = isDark();
+    var isPaw  = Math.random() < 0.25;
+    var hue    = 250 + Math.random() * 55;
+    var sat    = 45  + Math.random() * 30;
+    /* dark mode: pale/bright purples; light mode: dark purples so they show on white */
+    var lit    = dark ? 60 + Math.random() * 25 : 22 + Math.random() * 22;
+    var opBase = dark ? 0.07 + Math.random() * 0.2 : 0.18 + Math.random() * 0.28;
+    return {
+      x:       Math.random() * canvas.width,
+      y:       canvas.height + 20,
+      vx:      (Math.random() - 0.5) * 0.35,
+      vy:      -(0.35 + Math.random() * 0.55),   /* faster upward drift */
+      r:       (isPaw ? 2 : 1) + Math.random() * 1.8,
+      opacity: opBase,
+      rgb:     hslToRgb(hue/360, sat/100, lit/100),
+      isPaw:   isPaw,
+      life:    0,
+      maxLife: 400 + Math.random() * 500,         /* longer life → fly higher */
+    };
+  }
+
+  /* seed particles spread across viewport */
   for (var i = 0; i < 60; i++) {
     var p = makeParticle();
     p.y = Math.random() * canvas.height;
@@ -681,41 +720,30 @@ curl -sSL https://casparjones.github.io/mao/uninstall.sh | sh</code></pre>
   function frame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    /* subtle radial glow behind hero */
-    var grad = ctx.createRadialGradient(
-      canvas.width / 2, canvas.height * 0.28, 0,
-      canvas.width / 2, canvas.height * 0.28, Math.min(canvas.width, canvas.height) * 0.55
+    /* radial glow behind hero */
+    var gr = ctx.createRadialGradient(
+      canvas.width/2, canvas.height*0.28, 0,
+      canvas.width/2, canvas.height*0.28, Math.min(canvas.width, canvas.height)*0.55
     );
-    grad.addColorStop(0,   'rgba(100,80,180,0.07)');
-    grad.addColorStop(1,   'rgba(0,0,0,0)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    var glowA = isDark() ? 'rgba(100,80,180,0.07)' : 'rgba(100,80,180,0.04)';
+    gr.addColorStop(0, glowA); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = gr; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     for (var i = 0; i < particles.length; i++) {
-      var p = particles[i];
-      p.x += p.vx; p.y += p.vy; p.life++;
-
-      var progress = p.life / p.maxLife;
-      var alpha    = p.opacity * Math.sin(Math.PI * progress);
-
-      if (p.isPaw) {
-        drawPaw(p.x, p.y, p.r, alpha.toFixed(3), p.rgb);
-      } else {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, 6.2832);
-        ctx.fillStyle = 'rgba(' + p.rgb + ',' + alpha.toFixed(3) + ')';
-        ctx.fill();
+      var pt = particles[i];
+      pt.x += pt.vx; pt.y += pt.vy; pt.life++;
+      var alpha = (pt.opacity * Math.sin(Math.PI * pt.life / pt.maxLife)).toFixed(3);
+      if (pt.isPaw) drawPaw(pt.x, pt.y, pt.r, alpha, pt.rgb);
+      else {
+        ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r, 0, 6.2832);
+        ctx.fillStyle = 'rgba('+pt.rgb+','+alpha+')'; ctx.fill();
       }
-
-      if (p.life >= p.maxLife || p.y < -20) {
-        particles[i] = makeParticle();
-      }
+      if (pt.life >= pt.maxLife || pt.y < -30) particles[i] = makeParticle();
     }
-
-    raf = requestAnimationFrame(frame);
+    requestAnimationFrame(frame);
   }
 
-  if (!paused) frame();
+  if (!reduced) frame();
 })();
 </script>
 
