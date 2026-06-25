@@ -211,7 +211,14 @@ install_tray() {
 
     # --- optional sudoers ---------------------------------------------------
     if [ "$_setup_sudoers" -eq 1 ]; then
-        printf '%%wheel ALL=(ALL) NOPASSWD: /usr/bin/pacman\n' \
+        # On Garuda, garuda-update must also run via sudo from the tray (no TTY).
+        if command -v garuda-update >/dev/null 2>&1; then
+            _sudoers_line='%wheel ALL=(ALL) NOPASSWD: /usr/bin/pacman, /usr/bin/garuda-update'
+            say "Garuda detected — including garuda-update in sudoers entry"
+        else
+            _sudoers_line='%wheel ALL=(ALL) NOPASSWD: /usr/bin/pacman'
+        fi
+        printf '%s\n' "$_sudoers_line" \
             | sudo tee /etc/sudoers.d/mao-tray >/dev/null \
             && sudo chmod 440 /etc/sudoers.d/mao-tray \
             && ok "sudoers entry created → /etc/sudoers.d/mao-tray" \
