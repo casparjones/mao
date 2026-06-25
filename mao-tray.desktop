@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=mao-tray
+Comment=mao — Arch Linux update notifier
+Exec=mao-tray
+Icon=system-software-update
+Categories=System;
+StartupNotify=false
+X-GNOME-Autostart-enabled=true

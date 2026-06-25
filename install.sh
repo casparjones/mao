@@ -141,6 +141,105 @@ install_completion() {
     fi
 }
 
+install_tray() {
+    _tray_dir="$1"
+    _tray_path="$_tray_dir/mao-tray"
+
+    hr
+    printf '%s   /\_/\   %s%smao-tray setup%s\n' "${C_MAGENTA}" "${C_RESET}" "${C_BOLD}" "${C_RESET}"
+    printf '%s  ( ^.^ )  %s%ssystem tray update notifier%s\n' "${C_MAGENTA}" "${C_RESET}" "${C_DIM}" "${C_RESET}"
+    hr
+
+    # --- dependency check ---------------------------------------------------
+    if ! command -v python3 >/dev/null 2>&1; then
+        warn "python3 not found — cannot install mao-tray"
+        return
+    fi
+    if ! python3 -c "import PyQt6" 2>/dev/null; then
+        warn "python-pyqt6 not found (required for mao-tray)"
+        if ask "  Install python-pyqt6 now? (sudo pacman -S python-pyqt6)" y; then
+            sudo pacman -S --needed python-pyqt6 || {
+                warn "install failed — skipping mao-tray"
+                return
+            }
+        else
+            warn "skipping mao-tray — install python-pyqt6 and re-run the installer"
+            return
+        fi
+    fi
+
+    # --- download mao-tray --------------------------------------------------
+    if download "$MAO_REPO_RAW/mao-tray" "$_tray_path.tmp"; then
+        chmod +x "$_tray_path.tmp"
+        mv "$_tray_path.tmp" "$_tray_path"
+        ok "mao-tray installed → $_tray_path"
+    else
+        rm -f "$_tray_path.tmp"
+        warn "failed to download mao-tray"
+        return
+    fi
+
+    # --- configure: auto-update ---------------------------------------------
+    printf '\n'
+    say "Configuration (saved to ${C_BOLD}~/.config/mao/tray.json${C_RESET}):"
+    printf '\n'
+
+    _auto_update="false"
+    _setup_sudoers=0
+
+    printf '  %sAuto-update%s: automatically install updates every hour in the background.\n' \
+           "${C_BOLD}" "${C_RESET}"
+    printf '  %sNote: requires passwordless sudo for pacman (you can set this up below).%s\n' \
+           "${C_DIM}" "${C_RESET}"
+    if ask "  Enable auto-update?" n; then
+        _auto_update="true"
+        printf '\n'
+        printf '  %sSilent updates need pacman to run without a password prompt.%s\n' \
+               "${C_DIM}" "${C_RESET}"
+        printf '  %sThis creates: /etc/sudoers.d/mao-tray%s\n' \
+               "${C_DIM}" "${C_RESET}"
+        if ask "  Set up passwordless pacman via sudoers now?" y; then
+            _setup_sudoers=1
+        fi
+    fi
+
+    # --- write config -------------------------------------------------------
+    _conf_dir="$HOME/.config/mao"
+    mkdir -p "$_conf_dir"
+    printf '{"auto_update": %s}\n' "$_auto_update" > "$_conf_dir/tray.json"
+    ok "config saved → $_conf_dir/tray.json"
+
+    # --- optional sudoers ---------------------------------------------------
+    if [ "$_setup_sudoers" -eq 1 ]; then
+        printf '%%wheel ALL=(ALL) NOPASSWD: /usr/bin/pacman\n' \
+            | sudo tee /etc/sudoers.d/mao-tray >/dev/null \
+            && sudo chmod 440 /etc/sudoers.d/mao-tray \
+            && ok "sudoers entry created → /etc/sudoers.d/mao-tray" \
+            || warn "sudoers setup failed — add it manually if needed"
+    fi
+
+    # --- XDG autostart ------------------------------------------------------
+    printf '\n'
+    _autostart_dir="$HOME/.config/autostart"
+    if ask "  Start mao-tray automatically on login? (XDG autostart)" y; then
+        mkdir -p "$_autostart_dir"
+        if download "$MAO_REPO_RAW/mao-tray.desktop" "$_autostart_dir/mao-tray.desktop.tmp"; then
+            mv "$_autostart_dir/mao-tray.desktop.tmp" "$_autostart_dir/mao-tray.desktop"
+            ok "autostart entry installed → $_autostart_dir/mao-tray.desktop"
+        else
+            rm -f "$_autostart_dir/mao-tray.desktop.tmp"
+            warn "could not download autostart entry"
+        fi
+    fi
+
+    # --- summary ------------------------------------------------------------
+    printf '\n'
+    printf '  %sLog file:%s  ~/.local/share/mao/tray.log\n' "${C_DIM}" "${C_RESET}"
+    printf '  %sConfig:%s    ~/.config/mao/tray.json\n' "${C_DIM}" "${C_RESET}"
+    printf '\n'
+    ok "start now with: ${C_BOLD}mao-tray &${C_RESET}"
+}
+
 install_completions() {
     if [ "$(id -u)" -eq 0 ]; then
         fish_dir="/usr/share/fish/vendor_completions.d"
@@ -242,6 +341,11 @@ main() {
     # 6. completions
     if ask "Install shell completions?" y; then
         install_completions
+    fi
+
+    # 7. mao-tray (optional)
+    if ask "Install mao-tray (system tray update notifier)?" n; then
+        install_tray "$install_dir"
     fi
 
     hr

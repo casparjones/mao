@@ -4,9 +4,10 @@
 
 set -o pipefail
 
-readonly MAO_VERSION="0.1.2"
+readonly MAO_VERSION="0.1.3"
 readonly MAO_REPO="https://github.com/casparjones/mao"
 readonly MAO_HOMEPAGE="https://casparjones.github.io/mao/"
+readonly MAO_REPO_RAW="https://raw.githubusercontent.com/casparjones/mao/main"
 
 # ---------------------------------------------------------------------------
 # Colors — respect NO_COLOR and only colorize on a real TTY.
@@ -97,6 +98,7 @@ ${C_BOLD}COMMANDS${C_RESET}
   ${C_GREEN}outdated${C_RESET}            Show available updates       ${C_DIM}(paru -Qu)${C_RESET}
   ${C_GREEN}help${C_RESET}                Show this help
   ${C_GREEN}version${C_RESET}             Show mao & paru version
+  ${C_GREEN}uninstall${C_RESET}           Remove mao, mao-tray & completions
 
 ${C_BOLD}PASSTHROUGH${C_RESET}
   Anything that isn't a known subcommand is forwarded to paru 1:1:
@@ -141,6 +143,21 @@ cmd_update() {
     fi
     info "updating system and AUR packages → paru -Syu"
     exec paru -Syu "$@"
+}
+
+cmd_uninstall() {
+    if ! command -v curl >/dev/null 2>&1; then
+        die "curl is required for uninstall. Run manually:\n  curl -sSL ${MAO_HOMEPAGE}uninstall.sh | sh"
+    fi
+    local tmp
+    tmp="$(mktemp /tmp/mao-uninstall.XXXXXX.sh)"
+    trap 'rm -f "$tmp"' EXIT
+    info "downloading uninstall script…"
+    if ! curl -fsSL "${MAO_REPO_RAW}/uninstall.sh" -o "$tmp"; then
+        die "failed to download uninstall.sh from ${MAO_REPO_RAW}"
+    fi
+    chmod +x "$tmp"
+    exec sh "$tmp" "$@"
 }
 
 cmd_autoremove() {
@@ -189,6 +206,7 @@ main() {
     case "$cmd" in
         help|--help|-h)        print_help ;;
         version|--version|-v)  print_version ;;
+        uninstall)             cmd_uninstall "$@" ;;
 
         # Explicit passthrough separator: `mao -- <anything>` → paru <anything>
         --)                    require_paru

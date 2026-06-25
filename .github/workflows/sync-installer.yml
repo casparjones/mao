@@ -1,14 +1,15 @@
-name: Sync install.sh → docs/
+name: Sync scripts → docs/
 
-# Keep docs/install.sh (served by GitHub Pages) in lockstep with the
-# repo-root install.sh. Triggered only on changes to the root file, so
-# the auto-commit does not re-trigger the workflow.
+# Keep docs/ (served by GitHub Pages) in lockstep with the repo-root scripts.
+# Triggered only on changes to the relevant files, so the auto-commit
+# does not re-trigger the workflow.
 
 on:
   push:
     branches: [main]
     paths:
       - 'install.sh'
+      - 'uninstall.sh'
 
 permissions:
   contents: write
@@ -19,19 +20,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Copy install.sh into docs/
+      - name: Copy scripts into docs/
         run: |
           mkdir -p docs
-          cp install.sh docs/install.sh
+          cp install.sh   docs/install.sh
+          cp uninstall.sh docs/uninstall.sh
 
       - name: Commit if changed
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- docs/install.sh; then
-            echo "docs/install.sh already up to date"
+          git add docs/install.sh docs/uninstall.sh
+          if git diff --staged --quiet; then
+            echo "docs/ already up to date"
             exit 0
           fi
-          git add docs/install.sh
-          git commit -m "chore: sync install.sh → docs/"
+          git commit -m "chore: sync install.sh + uninstall.sh → docs/"
           git push

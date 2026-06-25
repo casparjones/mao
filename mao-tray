@@ -1,0 +1,362 @@
+#!/usr/bin/env python3
+"""mao-tray — system tray update notifier for mao (paru wrapper).
+
+Requires:  python-pyqt6
+           sudo pacman -S python-pyqt6
+
+Log file:  ~/.local/share/mao/tray.log
+Config:    ~/.config/mao/tray.json
+
+For unattended silent updates, allow pacman without a password:
+  echo "%wheel ALL=(ALL) NOPASSWD: /usr/bin/pacman" | sudo tee /etc/sudoers.d/mao-tray
+  sudo chmod 440 /etc/sudoers.d/mao-tray
+"""
+
+import json
+import logging
+import os
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
+
+from PyQt6.QtCore import QPointF, Qt, QThread, QTimer, pyqtSignal
+from PyQt6.QtGui import (
+    QColor,
+    QFont,
+    QIcon,
+    QPainter,
+    QPolygonF,
+    QPixmap,
+)
+from PyQt6.QtWidgets import (
+    QApplication,
+    QMenu,
+    QSystemTrayIcon,
+)
+
+# ---------------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------------
+_DATA_DIR  = Path.home() / ".local" / "share" / "mao"
+_CONF_DIR  = Path.home() / ".config" / "mao"
+LOG_FILE   = _DATA_DIR / "tray.log"
+_CONF_FILE = _CONF_DIR / "tray.json"
+
+_DATA_DIR.mkdir(parents=True, exist_ok=True)
+_CONF_DIR.mkdir(parents=True, exist_ok=True)
+
+# ---------------------------------------------------------------------------
+# Logging — file only (the tray runs headless)
+# ---------------------------------------------------------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s  %(levelname)-8s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[logging.FileHandler(LOG_FILE, encoding="utf-8")],
+)
+log = logging.getLogger("mao-tray")
+
+# ---------------------------------------------------------------------------
+# Config
+# ---------------------------------------------------------------------------
+_DEFAULTS: dict = {"auto_update": False}
+
+
+def _load_conf() -> dict:
+    try:
+        return {**_DEFAULTS, **json.loads(_CONF_FILE.read_text())}
+    except Exception:
+        return dict(_DEFAULTS)
+
+
+def _save_conf(conf: dict) -> None:
+    _CONF_FILE.write_text(json.dumps(conf, indent=2))
+
+
+# ---------------------------------------------------------------------------
+# Worker threads
+# ---------------------------------------------------------------------------
+class CheckThread(QThread):
+    done = pyqtSignal(list)
+
+    def run(self) -> None:
+        try:
+            r = subprocess.run(
+                ["paru", "-Qu"],
+                capture_output=True, text=True, timeout=60,
+            )
+            pkgs = [ln.strip() for ln in r.stdout.splitlines() if ln.strip()]
+            log.info("check: %d update(s) available", len(pkgs))
+            self.done.emit(pkgs)
+        except Exception as exc:
+            log.error("check failed: %s", exc)
+            self.done.emit([])
+
+
+class UpdateThread(QThread):
+    done = pyqtSignal(bool, str)
+
+    def __init__(self, shutdown_after: bool = False) -> None:
+        super().__init__()
+        self.shutdown_after = shutdown_after
+
+    def run(self) -> None:
+        log.info("silent update started (shutdown_after=%s)", self.shutdown_after)
+        try:
+            r = subprocess.run(
+                ["paru", "-Syu", "--noconfirm", "--noprogressbar"],
+                capture_output=True, text=True, timeout=600,
+                env={**os.environ, "TERM": "dumb"},
+            )
+            for line in (r.stdout + r.stderr).splitlines():
+                if line.strip():
+                    log.info("  paru: %s", line)
+
+            if r.returncode == 0:
+                log.info("silent update finished successfully")
+                if self.shutdown_after:
+                    log.info("shutting down as requested")
+                    subprocess.run(["systemctl", "poweroff"], check=False)
+                self.done.emit(True, "Update completed successfully")
+            else:
+                msg = f"paru exited with code {r.returncode}"
+                log.error("silent update failed: %s", msg)
+                self.done.emit(False, msg)
+        except subprocess.TimeoutExpired:
+            log.error("silent update timed out after 600 s")
+            self.done.emit(False, "Update timed out")
+        except Exception as exc:
+            log.error("silent update error: %s", exc)
+            self.done.emit(False, str(exc))
+
+
+# ---------------------------------------------------------------------------
+# Icon drawing  (64 × 64, Qt scales for the tray)
+# ---------------------------------------------------------------------------
+_PURPLE      = QColor("#9c8ecf")
+_PURPLE_DARK = QColor("#7c6eaf")
+_WHITE       = QColor("#ffffff")
+_PUPIL       = QColor("#2d2447")
+_NOSE        = QColor("#e8a0b0")
+_BADGE_BG    = QColor("#e53935")
+_TRANSP      = QColor(0, 0, 0, 0)
+
+
+def _make_icon(n: int) -> QIcon:
+    S = 64
+    pix = QPixmap(S, S)
+    pix.fill(_TRANSP)
+
+    p = QPainter(pix)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+    def tri(pts: list[tuple[float, float]]) -> None:
+        p.drawPolygon(QPolygonF([QPointF(*pt) for pt in pts]))
+
+    p.setBrush(_PURPLE_DARK)
+    p.setPen(Qt.PenStyle.NoPen)
+    tri([(8, 32), (17, 6), (28, 28)])
+    tri([(36, 28), (47, 6), (56, 32)])
+
+    p.setBrush(_PURPLE)
+    p.drawEllipse(6, 22, 52, 40)
+
+    p.setBrush(_WHITE)
+    p.drawEllipse(14, 32, 14, 11)
+    p.drawEllipse(36, 32, 14, 11)
+
+    p.setBrush(_PUPIL)
+    p.drawEllipse(17, 33, 8, 9)
+    p.drawEllipse(39, 33, 8, 9)
+
+    p.setBrush(_WHITE)
+    p.drawEllipse(22, 34, 3, 3)
+    p.drawEllipse(44, 34, 3, 3)
+
+    p.setBrush(_NOSE)
+    tri([(29, 46), (35, 46), (32, 50)])
+
+    p.setPen(QColor("#b0a0cc"))
+    for y, x1, x2 in [(44, 2, 20), (47, 2, 18), (44, 44, 62), (47, 46, 62)]:
+        p.drawLine(x1, y, x2, y)
+
+    if n > 0:
+        p.setBrush(_BADGE_BG)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.drawEllipse(40, 0, 24, 24)
+        p.setPen(_WHITE)
+        f = QFont()
+        f.setPixelSize(13)
+        f.setBold(True)
+        p.setFont(f)
+        label = str(n) if n < 100 else "99+"
+        p.drawText(40, 0, 24, 24, Qt.AlignmentFlag.AlignCenter, label)
+
+    p.end()
+    return QIcon(pix)
+
+
+# ---------------------------------------------------------------------------
+# Tray application
+# ---------------------------------------------------------------------------
+class Tray:
+    CHECK_INTERVAL = 60 * 60 * 1000   # 1 hour in ms
+
+    def __init__(self, app: QApplication) -> None:
+        self.app      = app
+        self._conf    = _load_conf()
+        self._pending: list[str] = []
+        self._checker: CheckThread | None  = None
+        self._updater: UpdateThread | None = None
+
+        self._icon = QSystemTrayIcon()
+        self._icon.setIcon(_make_icon(0))
+        self._icon.setToolTip("mao — initializing…")
+        self._icon.activated.connect(self._on_activated)
+        self._build_menu()
+        self._icon.show()
+
+        self._timer = QTimer(interval=self.CHECK_INTERVAL)
+        self._timer.timeout.connect(self._on_timer)
+        self._timer.start()
+        self._check()
+
+    def _build_menu(self) -> None:
+        m = QMenu()
+
+        self._act_status = m.addAction("mao")
+        self._act_status.setEnabled(False)
+        self._act_last = m.addAction("Last check: —")
+        self._act_last.setEnabled(False)
+        m.addSeparator()
+
+        m.addAction("Check now").triggered.connect(self._check)
+        m.addAction("Update now").triggered.connect(self._update_silent)
+        m.addAction("Update + Shutdown").triggered.connect(self._update_and_shutdown)
+
+        m.addSeparator()
+
+        self._act_auto = m.addAction(self._auto_label())
+        self._act_auto.triggered.connect(self._toggle_auto)
+
+        m.addSeparator()
+
+        m.addAction(f"View log  ({LOG_FILE})").triggered.connect(self._open_log)
+
+        m.addSeparator()
+
+        m.addAction("Quit").triggered.connect(self.app.quit)
+
+        self._icon.setContextMenu(m)
+
+    def _auto_label(self) -> str:
+        state = "ON" if self._conf["auto_update"] else "OFF"
+        return f"Auto-update: {state}"
+
+    # ------------------------------------------------------------------
+    def _check(self) -> None:
+        if self._checker and self._checker.isRunning():
+            return
+        self._act_status.setText("Checking…")
+        self._checker = CheckThread()
+        self._checker.done.connect(self._on_check_done)
+        self._checker.start()
+
+    def _on_check_done(self, pkgs: list[str]) -> None:
+        self._pending = pkgs
+        n = len(pkgs)
+        self._icon.setIcon(_make_icon(n))
+
+        if n == 0:
+            tip = "mao — system is up to date"
+            self._act_status.setText("System is up to date")
+        else:
+            s = "s" if n != 1 else ""
+            tip = f"mao — {n} update{s} available"
+            self._act_status.setText(f"{n} update{s} available")
+            self._icon.showMessage(
+                "mao — updates available", tip,
+                QSystemTrayIcon.MessageIcon.Information, 5000,
+            )
+
+        self._icon.setToolTip(tip)
+        self._act_last.setText("Last check: " + datetime.now().strftime("%d.%m.%Y %H:%M"))
+
+        if n > 0 and self._conf["auto_update"]:
+            self._update_silent()
+
+    # ------------------------------------------------------------------
+    def _on_timer(self) -> None:
+        log.info("hourly check triggered")
+        self._check()
+
+    # ------------------------------------------------------------------
+    def _update_silent(self) -> None:
+        if self._updater and self._updater.isRunning():
+            log.info("update already running, skipping")
+            return
+        self._act_status.setText("Updating…")
+        self._updater = UpdateThread(shutdown_after=False)
+        self._updater.done.connect(self._on_update_done)
+        self._updater.start()
+
+    def _update_and_shutdown(self) -> None:
+        if self._updater and self._updater.isRunning():
+            return
+        self._act_status.setText("Updating before shutdown…")
+        self._updater = UpdateThread(shutdown_after=True)
+        self._updater.done.connect(self._on_update_done)
+        self._updater.start()
+
+    def _on_update_done(self, ok: bool, msg: str) -> None:
+        self._icon.showMessage(
+            "mao — update " + ("done" if ok else "failed"),
+            msg,
+            QSystemTrayIcon.MessageIcon.Information if ok
+            else QSystemTrayIcon.MessageIcon.Critical,
+            6000,
+        )
+        if ok:
+            self._check()
+
+    # ------------------------------------------------------------------
+    def _toggle_auto(self) -> None:
+        self._conf["auto_update"] = not self._conf["auto_update"]
+        _save_conf(self._conf)
+        self._act_auto.setText(self._auto_label())
+        log.info("auto-update %s", "enabled" if self._conf["auto_update"] else "disabled")
+
+    # ------------------------------------------------------------------
+    def _open_log(self) -> None:
+        LOG_FILE.touch()   # ensure file exists before opening
+        try:
+            subprocess.Popen(["xdg-open", str(LOG_FILE)])
+        except FileNotFoundError:
+            # xdg-open not available — try $VISUAL / $EDITOR as fallback
+            editor = os.environ.get("VISUAL") or os.environ.get("EDITOR", "nano")
+            subprocess.Popen([editor, str(LOG_FILE)])
+
+    # ------------------------------------------------------------------
+    def _on_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:
+        if reason == QSystemTrayIcon.ActivationReason.Trigger:
+            self._check()
+
+
+# ---------------------------------------------------------------------------
+def main() -> None:
+    app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
+    app.setApplicationName("mao-tray")
+
+    if not QSystemTrayIcon.isSystemTrayAvailable():
+        log.critical("no system tray detected — exiting")
+        sys.exit(1)
+
+    tray = Tray(app)
+    log.info("mao-tray started")
+    sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    main()
