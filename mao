@@ -4,7 +4,7 @@
 
 set -o pipefail
 
-readonly MAO_VERSION="0.1.4"
+readonly MAO_VERSION="0.1.5"
 readonly MAO_REPO="https://github.com/casparjones/mao"
 readonly MAO_HOMEPAGE="https://casparjones.github.io/mao/"
 readonly MAO_REPO_RAW="https://raw.githubusercontent.com/casparjones/mao/main"
