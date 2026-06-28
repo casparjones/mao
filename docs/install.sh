@@ -231,6 +231,8 @@ install_tray() {
     if ask "  Start mao-tray automatically on login? (XDG autostart)" y; then
         mkdir -p "$_autostart_dir"
         if download "$MAO_REPO_RAW/mao-tray.desktop" "$_autostart_dir/mao-tray.desktop.tmp"; then
+            _mao_tray_bin="$(command -v mao-tray 2>/dev/null || printf '%s/.local/bin/mao-tray' "$HOME")"
+            sed -i "s|^Exec=.*|Exec=$_mao_tray_bin|" "$_autostart_dir/mao-tray.desktop.tmp"
             mv "$_autostart_dir/mao-tray.desktop.tmp" "$_autostart_dir/mao-tray.desktop"
             ok "autostart entry installed → $_autostart_dir/mao-tray.desktop"
         else
