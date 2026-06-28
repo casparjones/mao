@@ -164,18 +164,38 @@ cmd_system_update() {
     if ! command -v curl >/dev/null 2>&1; then
         die "curl is required. Install it with: sudo pacman -S curl"
     fi
-    local current_path
-    current_path="$(command -v mao 2>/dev/null)" || die "cannot locate the mao binary"
-    info "downloading latest mao from ${MAO_REPO_RAW}/mao…"
+
     local tmp
     tmp="$(mktemp /tmp/mao-update.XXXXXX)"
     trap 'rm -f "$tmp"' EXIT
+
+    # --- update mao ---------------------------------------------------------
+    local current_path
+    current_path="$(command -v mao 2>/dev/null)" || die "cannot locate the mao binary"
+    info "downloading latest mao…"
     if ! curl -fsSL "${MAO_REPO_RAW}/mao" -o "$tmp"; then
         die "failed to download latest mao"
     fi
     chmod +x "$tmp"
     mv "$tmp" "$current_path"
-    info "mao updated:"
+    ok "mao updated → $current_path"
+
+    # --- update mao-tray (only if installed) --------------------------------
+    local tray_path
+    tray_path="$(command -v mao-tray 2>/dev/null)" || true
+    if [[ -n "$tray_path" ]]; then
+        info "downloading latest mao-tray…"
+        tmp="$(mktemp /tmp/mao-tray-update.XXXXXX)"
+        if curl -fsSL "${MAO_REPO_RAW}/mao-tray" -o "$tmp"; then
+            chmod +x "$tmp"
+            mv "$tmp" "$tray_path"
+            ok "mao-tray updated → $tray_path"
+        else
+            warn "failed to download latest mao-tray — skipping"
+        fi
+    fi
+
+    printf '\n'
     "$current_path" version
 }
 
