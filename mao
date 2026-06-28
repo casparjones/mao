@@ -4,10 +4,12 @@
 
 set -o pipefail
 
-readonly MAO_VERSION="0.1.6"
+readonly MAO_VERSION="0.1.7"
 readonly MAO_REPO="https://github.com/casparjones/mao"
 readonly MAO_HOMEPAGE="https://casparjones.github.io/mao/"
-readonly MAO_REPO_RAW="https://raw.githubusercontent.com/casparjones/mao/main"
+# GitHub contents API (raw media type) bypasses the raw.githubusercontent.com
+# CDN cache, which can serve a stale file for several minutes after a push.
+readonly MAO_REPO_API="https://api.github.com/repos/casparjones/mao/contents"
 
 # ---------------------------------------------------------------------------
 # Colors — respect NO_COLOR and only colorize on a real TTY.
@@ -173,7 +175,7 @@ cmd_system_update() {
     local current_path
     current_path="$(command -v mao 2>/dev/null)" || die "cannot locate the mao binary"
     info "downloading latest mao…"
-    if ! curl -fsSL "${MAO_REPO_RAW}/mao" -o "$tmp"; then
+    if ! curl -fsSL -H "Accept: application/vnd.github.raw" "${MAO_REPO_API}/mao?ref=main" -o "$tmp"; then
         die "failed to download latest mao"
     fi
     chmod +x "$tmp"
@@ -186,7 +188,7 @@ cmd_system_update() {
     if [[ -n "$tray_path" ]]; then
         info "downloading latest mao-tray…"
         tmp="$(mktemp /tmp/mao-tray-update.XXXXXX)"
-        if curl -fsSL "${MAO_REPO_RAW}/mao-tray" -o "$tmp"; then
+        if curl -fsSL -H "Accept: application/vnd.github.raw" "${MAO_REPO_API}/mao-tray?ref=main" -o "$tmp"; then
             chmod +x "$tmp"
             mv "$tmp" "$tray_path"
             info "mao-tray updated → $tray_path"
@@ -207,8 +209,8 @@ cmd_system_uninstall() {
     tmp="$(mktemp /tmp/mao-uninstall.XXXXXX.sh)"
     trap 'rm -f "$tmp"' EXIT
     info "downloading uninstall script…"
-    if ! curl -fsSL "${MAO_REPO_RAW}/uninstall.sh" -o "$tmp"; then
-        die "failed to download uninstall.sh from ${MAO_REPO_RAW}"
+    if ! curl -fsSL -H "Accept: application/vnd.github.raw" "${MAO_REPO_API}/uninstall.sh?ref=main" -o "$tmp"; then
+        die "failed to download uninstall.sh from ${MAO_REPO_API}"
     fi
     chmod +x "$tmp"
     exec sh "$tmp" "$@"
