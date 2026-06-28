@@ -12,7 +12,10 @@
 set -eu
 
 MAO_BRANCH="${MAO_BRANCH:-main}"
-MAO_REPO_RAW="https://raw.githubusercontent.com/casparjones/mao/${MAO_BRANCH}"
+# Fetch via the GitHub contents API (raw media type) rather than
+# raw.githubusercontent.com — the raw CDN caches each file for several
+# minutes, so a fresh push would otherwise serve a stale version.
+MAO_REPO_API="https://api.github.com/repos/casparjones/mao/contents"
 MAO_REPO="https://github.com/casparjones/mao"
 MAO_HOMEPAGE="https://casparjones.github.io/mao/"
 
@@ -94,7 +97,7 @@ require_cmd() {
 
 download() {
     _url="$1"; _out="$2"
-    curl -fsSL "$_url" -o "$_out"
+    curl -fsSL -H "Accept: application/vnd.github.raw" "$_url?ref=$MAO_BRANCH" -o "$_out"
 }
 
 # ---------------------------------------------------------------------------
@@ -132,7 +135,7 @@ path_hint() {
 install_completion() {
     _name="$1"; _target="$2"
     mkdir -p "$(dirname "$_target")"
-    if download "$MAO_REPO_RAW/completions/$_name" "$_target.tmp"; then
+    if download "$MAO_REPO_API/completions/$_name" "$_target.tmp"; then
         mv "$_target.tmp" "$_target"
         ok "installed $_target"
     else
@@ -169,7 +172,7 @@ install_tray() {
     fi
 
     # --- download mao-tray --------------------------------------------------
-    if download "$MAO_REPO_RAW/mao-tray" "$_tray_path.tmp"; then
+    if download "$MAO_REPO_API/mao-tray" "$_tray_path.tmp"; then
         chmod +x "$_tray_path.tmp"
         mv "$_tray_path.tmp" "$_tray_path"
         ok "mao-tray installed → $_tray_path"
@@ -230,7 +233,7 @@ install_tray() {
     _autostart_dir="$HOME/.config/autostart"
     if ask "  Start mao-tray automatically on login? (XDG autostart)" y; then
         mkdir -p "$_autostart_dir"
-        if download "$MAO_REPO_RAW/mao-tray.desktop" "$_autostart_dir/mao-tray.desktop.tmp"; then
+        if download "$MAO_REPO_API/mao-tray.desktop" "$_autostart_dir/mao-tray.desktop.tmp"; then
             _mao_tray_bin="$(command -v mao-tray 2>/dev/null || printf '%s/.local/bin/mao-tray' "$HOME")"
             sed -i "s|^Exec=.*|Exec=$_mao_tray_bin|" "$_autostart_dir/mao-tray.desktop.tmp"
             mv "$_autostart_dir/mao-tray.desktop.tmp" "$_autostart_dir/mao-tray.desktop"
@@ -328,9 +331,9 @@ main() {
     mkdir -p "$install_dir"
 
     # 4. download mao
-    if ! download "$MAO_REPO_RAW/mao" "$install_path.tmp"; then
+    if ! download "$MAO_REPO_API/mao" "$install_path.tmp"; then
         rm -f "$install_path.tmp"
-        die "failed to download mao from $MAO_REPO_RAW/mao"
+        die "failed to download mao from $MAO_REPO_API/mao"
     fi
     chmod +x "$install_path.tmp"
     mv "$install_path.tmp" "$install_path"
