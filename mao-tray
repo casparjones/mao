@@ -47,6 +47,21 @@ _CONF_FILE = _CONF_DIR / "tray.json"
 _DATA_DIR.mkdir(parents=True, exist_ok=True)
 _CONF_DIR.mkdir(parents=True, exist_ok=True)
 
+def _mao_version() -> str:
+    try:
+        out = subprocess.check_output(["mao", "--version"], text=True, timeout=3)
+        for line in out.splitlines():
+            if "mao" in line and "v" in line:
+                for token in line.split():
+                    if token.startswith("v"):
+                        return token.lstrip("v")
+                break
+    except Exception:
+        pass
+    return "?"
+
+MAO_VERSION = _mao_version()
+
 # ---------------------------------------------------------------------------
 # Logging — file only (the tray runs headless)
 # ---------------------------------------------------------------------------
@@ -276,6 +291,10 @@ class Tray:
         m.addSeparator()
 
         m.addAction("Quit").triggered.connect(self.app.quit)
+
+        m.addSeparator()
+        _ver_act = m.addAction(f"mao-tray v{MAO_VERSION}")
+        _ver_act.setEnabled(False)
 
         self._icon.setContextMenu(m)
 
