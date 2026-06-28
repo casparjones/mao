@@ -4,7 +4,7 @@
 
 set -o pipefail
 
-readonly MAO_VERSION="0.1.5"
+readonly MAO_VERSION="0.1.6"
 readonly MAO_REPO="https://github.com/casparjones/mao"
 readonly MAO_HOMEPAGE="https://casparjones.github.io/mao/"
 readonly MAO_REPO_RAW="https://raw.githubusercontent.com/casparjones/mao/main"
@@ -178,7 +178,7 @@ cmd_system_update() {
     fi
     chmod +x "$tmp"
     mv "$tmp" "$current_path"
-    ok "mao updated → $current_path"
+    info "mao updated → $current_path"
 
     # --- update mao-tray (only if installed) --------------------------------
     local tray_path
@@ -189,7 +189,7 @@ cmd_system_update() {
         if curl -fsSL "${MAO_REPO_RAW}/mao-tray" -o "$tmp"; then
             chmod +x "$tmp"
             mv "$tmp" "$tray_path"
-            ok "mao-tray updated → $tray_path"
+            info "mao-tray updated → $tray_path"
         else
             warn "failed to download latest mao-tray — skipping"
         fi
